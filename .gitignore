@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.env
+temp/
+attendance/
+photos/
+database/
+logs/
+.render-data/
+embeddings.pkl
