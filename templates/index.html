@@ -4736,15 +4736,30 @@
       const err = document.getElementById('login-err');
       if (!uid || !pass) { showMsg(err, '⚠️ Please enter your ID and Password.', 'error'); return; }
 
+      const parseApiResponse = async (response) => {
+        const raw = await response.text();
+        try {
+          return { ok: response.ok, data: JSON.parse(raw) };
+        } catch (_error) {
+          return {
+            ok: false,
+            data: {
+              success: false,
+              message: raw || `Server returned ${response.status}. Please try again.`
+            }
+          };
+        }
+      };
+
       if (currentRole === 'teacher') {
         fetch('/api/teacher/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userid: uid, password: pass })
         })
-          .then(r => r.json())
-          .then(data => {
-            if (data.success) {
+          .then(parseApiResponse)
+          .then(({ ok, data }) => {
+            if (ok && data.success) {
               err.style.display = 'none';
               currentTeacherPassword = pass;
               loadTeacherDashboard(uid, data);
@@ -4765,9 +4780,9 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userid: uid, password: pass })
         })
-          .then(r => r.json())
-          .then(data => {
-            if (data.success) {
+          .then(parseApiResponse)
+          .then(({ ok, data }) => {
+            if (ok && data.success) {
               err.style.display = 'none';
               loadStudentDashboard(uid, data);
               goTo('pg-student');
@@ -4789,9 +4804,9 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userid: uid, password: pass, secret: secret })
         })
-          .then(r => r.json())
-          .then(data => {
-            if (data.success) {
+          .then(parseApiResponse)
+          .then(({ ok, data }) => {
+            if (ok && data.success) {
               adminFailCount = 0;
               currentAdminId = uid;
               currentAdminSecret = secret;

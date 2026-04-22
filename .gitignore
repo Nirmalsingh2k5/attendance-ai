@@ -4,7 +4,6 @@ __pycache__/
 temp/
 attendance/
 photos/
-database/
 logs/
 .render-data/
 embeddings.pkl

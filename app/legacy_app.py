@@ -6,6 +6,7 @@ import shutil
 import smtplib
 import tempfile
 import time
+import importlib
 from datetime import datetime, timedelta
 from email.message import EmailMessage
 from pathlib import Path
@@ -21,14 +22,10 @@ from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
-try:
-    from deepface import DeepFace
-    from deepface.modules import verification
-    FACE_RUNTIME_ERROR = None
-except Exception as exc:  # pragma: no cover - depends on native/runtime libs
-    DeepFace = None
-    verification = None
-    FACE_RUNTIME_ERROR = exc
+DeepFace = None
+verification = None
+FACE_RUNTIME_ERROR = None
+FACE_RUNTIME_LOADED = False
 
 from .config import settings
 from .models.db import database_runtime
@@ -283,8 +280,30 @@ def normalize_role(value):
     return str(value or "").strip().lower()
 
 
+def load_face_runtime():
+    global DeepFace, verification, FACE_RUNTIME_ERROR, FACE_RUNTIME_LOADED
+
+    if FACE_RUNTIME_LOADED:
+        return DeepFace, verification
+
+    try:
+        DeepFace = importlib.import_module("deepface").DeepFace
+        verification = importlib.import_module("deepface.modules.verification")
+        FACE_RUNTIME_ERROR = None
+        FACE_RUNTIME_LOADED = True
+        logger.info("DeepFace runtime loaded on demand.")
+        return DeepFace, verification
+    except Exception as exc:  # pragma: no cover - depends on runtime env
+        FACE_RUNTIME_ERROR = exc
+        FACE_RUNTIME_LOADED = False
+        logger.exception("Unable to load DeepFace runtime on demand: %s", exc)
+        raise
+
+
 def ensure_face_runtime_ready():
-    if DeepFace is None:
+    try:
+        load_face_runtime()
+    except Exception:
         error_detail = f": {FACE_RUNTIME_ERROR}" if FACE_RUNTIME_ERROR else "."
         raise RuntimeError(
             "Face recognition dependencies are unavailable on this server"
@@ -1892,16 +1911,10 @@ def upload_photos():
 def take_attendance():
     if "photo" not in request.files:
         return jsonify({"success": False, "message": "No photo was received!"})
-    if DeepFace is None:
-        return jsonify(
-            {
-                "success": False,
-                "message": (
-                    "Face recognition is temporarily unavailable on this deployment. "
-                    "Please check DeepFace/TensorFlow runtime dependencies."
-                ),
-            }
-        ), 503
+    try:
+        ensure_face_runtime_ready()
+    except RuntimeError as exc:
+        return jsonify({"success": False, "message": str(exc)}), 503
 
     if not known_faces:
         load_known_faces()
