@@ -3493,6 +3493,17 @@
       border-color: var(--border2)
     }
 
+    .landing-v2-nav .seal-mini {
+      font-size: 0
+    }
+
+    .landing-v2-nav .seal-mini::before {
+      content: 'AI';
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: .08em
+    }
+
     .landing-v2-hero {
       position: relative;
       overflow: hidden;
@@ -3948,6 +3959,518 @@
       justify-content: flex-end
     }
 
+    @keyframes landingFloat {
+      0%,
+      100% {
+        transform: translateY(0)
+      }
+
+      50% {
+        transform: translateY(-10px)
+      }
+    }
+
+    @keyframes landingGlowPulse {
+      0%,
+      100% {
+        opacity: .55;
+        transform: scale(1)
+      }
+
+      50% {
+        opacity: .9;
+        transform: scale(1.08)
+      }
+    }
+
+    @keyframes landingTicker {
+      0% {
+        transform: translateX(0)
+      }
+
+      100% {
+        transform: translateX(-50%)
+      }
+    }
+
+    .landing-v3-preview {
+      position: relative;
+      min-height: 520px
+    }
+
+    .landing-v3-dashboard,
+    .landing-v3-phone {
+      position: relative;
+      border-radius: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      overflow: hidden
+    }
+
+    .landing-v3-dashboard {
+      padding: 14px;
+      background: linear-gradient(160deg, rgba(14, 24, 42, 0.92), rgba(25, 42, 76, 0.88));
+      box-shadow: 0 28px 80px rgba(2, 6, 23, 0.34)
+    }
+
+    .landing-v3-dashboard::before,
+    .landing-v3-phone::before,
+    .landing-v3-visual-card::before {
+      content: '';
+      position: absolute;
+      inset: auto;
+      border-radius: 999px;
+      pointer-events: none
+    }
+
+    .landing-v3-dashboard::before {
+      width: 180px;
+      height: 180px;
+      right: -70px;
+      top: -70px;
+      background: radial-gradient(circle, rgba(45, 212, 191, 0.3), transparent 72%);
+      animation: landingGlowPulse 5s ease-in-out infinite
+    }
+
+    .landing-v3-preview-top {
+      display: flex;
+      gap: 8px;
+      padding: 4px 2px 14px
+    }
+
+    .landing-v3-preview-top span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.28)
+    }
+
+    .landing-v3-preview-screen {
+      display: grid;
+      gap: 14px;
+      padding: 20px;
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03))
+    }
+
+    .landing-v3-preview-head,
+    .landing-v3-feed-row,
+    .landing-v3-phone-head,
+    .landing-v3-phone-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px
+    }
+
+    .landing-v3-preview-head small,
+    .landing-v3-phone-head small,
+    .landing-v3-card-head small {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--text3)
+    }
+
+    .landing-v3-preview-head strong,
+    .landing-v3-phone-head strong,
+    .landing-v3-card-head strong {
+      display: block;
+      margin-top: 6px;
+      color: #f8fafc;
+      font-family: 'Syne', sans-serif;
+      font-size: 24px;
+      line-height: 1.06
+    }
+
+    .landing-v3-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      padding: 0 14px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase
+    }
+
+    .landing-v3-badge.success {
+      background: rgba(16, 185, 129, 0.14);
+      color: #bbf7d0;
+      border: 1px solid rgba(16, 185, 129, 0.22)
+    }
+
+    .landing-v3-badge.primary {
+      background: rgba(59, 130, 246, 0.16);
+      color: #bfdbfe;
+      border: 1px solid rgba(59, 130, 246, 0.2)
+    }
+
+    .landing-v3-mini-kpis {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px
+    }
+
+    .landing-v3-mini-kpi {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08)
+    }
+
+    .landing-v3-mini-kpi span {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: rgba(226, 232, 240, 0.64)
+    }
+
+    .landing-v3-mini-kpi strong {
+      display: block;
+      margin-top: 10px;
+      color: #f8fafc;
+      font-family: 'Syne', sans-serif;
+      font-size: 20px
+    }
+
+    .landing-v3-feed {
+      display: grid;
+      gap: 10px
+    }
+
+    .landing-v3-feed-row {
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06)
+    }
+
+    .landing-v3-feed-user {
+      display: flex;
+      align-items: center;
+      gap: 12px
+    }
+
+    .landing-v3-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.88), rgba(45, 212, 191, 0.88));
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .04em
+    }
+
+    .landing-v3-feed-user strong {
+      display: block;
+      color: #f8fafc;
+      font-size: 14px;
+      font-weight: 700
+    }
+
+    .landing-v3-feed-user span {
+      display: block;
+      margin-top: 4px;
+      font-size: 12px;
+      color: rgba(226, 232, 240, 0.6)
+    }
+
+    .landing-v3-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #34d399;
+      box-shadow: 0 0 0 6px rgba(52, 211, 153, 0.14)
+    }
+
+    .landing-v3-phone {
+      position: absolute;
+      right: -14px;
+      bottom: 20px;
+      width: 210px;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(10, 17, 32, 0.96), rgba(18, 30, 56, 0.92));
+      box-shadow: 0 24px 70px rgba(2, 6, 23, 0.42);
+      animation: landingFloat 4.8s ease-in-out infinite
+    }
+
+    .landing-v3-phone::before {
+      width: 120px;
+      height: 120px;
+      left: -40px;
+      bottom: -44px;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.26), transparent 72%)
+    }
+
+    .landing-v3-phone-screen {
+      padding: 16px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03));
+      display: grid;
+      gap: 10px
+    }
+
+    .landing-v3-phone-item {
+      padding: 10px 12px;
+      border-radius: 15px;
+      background: rgba(255, 255, 255, 0.04)
+    }
+
+    .landing-v3-phone-item strong {
+      color: #f8fafc;
+      font-size: 13px;
+      font-weight: 700
+    }
+
+    .landing-v3-phone-item span {
+      color: rgba(226, 232, 240, 0.65);
+      font-size: 11px
+    }
+
+    .landing-v3-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 26px;
+      padding: 0 10px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase
+    }
+
+    .landing-v3-pill.green {
+      background: rgba(16, 185, 129, 0.14);
+      color: #86efac
+    }
+
+    .landing-v3-pill.blue {
+      background: rgba(59, 130, 246, 0.16);
+      color: #93c5fd
+    }
+
+    .landing-v3-module-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+      gap: 16px
+    }
+
+    .landing-v3-visual-card {
+      position: relative;
+      overflow: hidden;
+      padding: 24px;
+      min-height: 320px;
+      background: linear-gradient(145deg, rgba(9, 16, 28, 0.34), rgba(37, 99, 235, 0.12))
+    }
+
+    .landing-v3-visual-card::before {
+      width: 240px;
+      height: 240px;
+      right: -70px;
+      top: -70px;
+      background: radial-gradient(circle, rgba(125, 211, 252, 0.25), transparent 72%);
+      animation: landingGlowPulse 6s ease-in-out infinite
+    }
+
+    .landing-v3-visual-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 14px;
+      margin-top: 18px
+    }
+
+    .landing-v3-stack-card,
+    .landing-v3-panel-card {
+      padding: 18px;
+      border-radius: 22px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.06)
+    }
+
+    .landing-v3-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px
+    }
+
+    .landing-v3-bars {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px
+    }
+
+    .landing-v3-bar {
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden
+    }
+
+    .landing-v3-bar span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), var(--accent2))
+    }
+
+    .landing-v3-module-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px
+    }
+
+    .landing-v3-module-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.05)
+    }
+
+    .landing-v3-module-line strong {
+      color: var(--text);
+      font-size: 14px
+    }
+
+    .landing-v3-module-line span {
+      color: var(--text3);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase
+    }
+
+    .landing-v3-module-cards {
+      display: grid;
+      gap: 16px
+    }
+
+    .landing-v3-module-card {
+      padding: 22px;
+      border-radius: 24px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.06)
+    }
+
+    .landing-v3-module-card h4,
+    .landing-v3-flow-card h4,
+    .landing-v3-access-card h4 {
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      font-size: 22px;
+      line-height: 1.05
+    }
+
+    .landing-v3-module-card p,
+    .landing-v3-flow-card p,
+    .landing-v3-access-card p {
+      margin-top: 10px;
+      color: var(--text2);
+      font-size: 13px;
+      line-height: 1.75
+    }
+
+    .landing-v3-flow-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px
+    }
+
+    .landing-v3-flow-card,
+    .landing-v3-access-card {
+      padding: 24px;
+      border-radius: 24px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.06)
+    }
+
+    .landing-v3-flow-no {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 50px;
+      height: 50px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -.03em;
+      margin-bottom: 18px
+    }
+
+    .landing-v3-ticker {
+      overflow: hidden;
+      padding: 10px 0 0
+    }
+
+    .landing-v3-ticker-track {
+      display: flex;
+      gap: 12px;
+      width: max-content;
+      animation: landingTicker 22s linear infinite
+    }
+
+    .landing-v3-ticker-track span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 38px;
+      padding: 0 16px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      color: var(--text2);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase
+    }
+
+    .landing-v3-access-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px
+    }
+
+    .landing-v3-access-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px
+    }
+
+    .landing-v3-access-mark {
+      width: 52px;
+      height: 52px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.9), rgba(45, 212, 191, 0.85));
+      color: #fff;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: .04em
+    }
+
     @media(max-width:1080px) {
 
       .landing-v2-nav {
@@ -3969,6 +4492,15 @@
       .landing-v2-feature-card,
       .landing-v2-feature-card.is-wide {
         grid-column: span 6
+      }
+
+      .landing-v3-module-grid,
+      .landing-v3-access-grid {
+        grid-template-columns: 1fr
+      }
+
+      .landing-v3-flow-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr))
       }
 
       .landing-v2-role-grid {
@@ -4013,6 +4545,25 @@
 
       .landing-v2-copy p {
         max-width: 100%
+      }
+
+      .landing-v3-preview {
+        min-height: 0
+      }
+
+      .landing-v3-phone {
+        position: relative;
+        right: auto;
+        bottom: auto;
+        width: min(100%, 280px);
+        margin: 12px 0 0 auto
+      }
+
+      .landing-v3-mini-kpis,
+      .landing-v3-visual-grid,
+      .landing-v3-flow-grid,
+      .landing-v3-access-grid {
+        grid-template-columns: 1fr
       }
 
       .landing-v2-stat-grid,
@@ -4072,7 +4623,10 @@
       .landing-v2-step-card p,
       .landing-v2-role-card p,
       .landing-v2-proof-card p,
-      .landing-v2-cta-copy p {
+      .landing-v2-cta-copy p,
+      .landing-v3-module-card p,
+      .landing-v3-flow-card p,
+      .landing-v3-access-card p {
         font-size: 13px;
         line-height: 1.72
       }
@@ -4092,6 +4646,25 @@
         width: 48px;
         height: 48px;
         border-radius: 15px
+      }
+
+      .landing-v3-preview-screen,
+      .landing-v3-visual-card,
+      .landing-v3-module-card,
+      .landing-v3-flow-card,
+      .landing-v3-access-card {
+        padding: 18px
+      }
+
+      .landing-v3-preview-head strong,
+      .landing-v3-card-head strong {
+        font-size: 20px
+      }
+
+      .landing-v3-module-card h4,
+      .landing-v3-flow-card h4,
+      .landing-v3-access-card h4 {
+        font-size: 19px
       }
     }
   </style>
@@ -4229,8 +4802,8 @@
       <section class="landing-v2-hero glass-card" id="home-overview">
         <div class="landing-v2-copy">
           <div class="landing-v2-chip">AI Attendance for DSEU</div>
-          <h2>Campus attendance that feels premium from the first click.</h2>
-          <p>Face recognition, manual backup, student records, and role-based access now live inside one cleaner portal built for classrooms, labs, and daily attendance review. The entry experience looks sharper, and the real work still stays one tap away.</p>
+          <h2>AI attendance that looks ready to launch.</h2>
+          <p>Clean entry, strong visuals, fast actions, and one direct path into the portal.</p>
           <div class="landing-actions">
             <button class="btn-primary" onclick="goTo('pg-login')">Open Secure Portal</button>
             <button class="btn-secondary" onclick="goTo('pg-reg-teacher')">Register Teacher</button>
@@ -4238,144 +4811,223 @@
           <div class="landing-v2-stat-grid">
             <div class="landing-v2-stat">
               <strong>AI Capture</strong>
-              <span>Use live camera or upload a classroom photo to mark attendance fast.</span>
+              <span>Live camera or class photo.</span>
             </div>
             <div class="landing-v2-stat">
               <strong>Fallback Ready</strong>
-              <span>Manual attendance, records, and review flows stay available when needed.</span>
+              <span>Manual mode stays ready.</span>
             </div>
             <div class="landing-v2-stat">
               <strong>Phone + Laptop</strong>
-              <span>The landing screen stacks cleanly so teachers can still use it on mobile.</span>
+              <span>Responsive on phone and laptop.</span>
             </div>
           </div>
         </div>
         <div class="landing-v2-aside">
-          <div class="landing-v2-spotlight">
-            <span class="landing-v2-chip alt">Portal Snapshot</span>
-            <h3>Public entry outside, secure workflows inside.</h3>
-            <p>Visitors land on a polished front page first, then move into teacher, student, or admin workflows without confusion. It feels like a real product page instead of a plain login gate.</p>
-            <div class="landing-v2-mini-grid">
-              <div class="landing-v2-mini-card">
-                <small>Teacher</small>
-                <strong>Take attendance</strong>
+          <div class="landing-v3-preview">
+            <div class="landing-v3-dashboard">
+              <div class="landing-v3-preview-top">
+                <span></span>
+                <span></span>
+                <span></span>
               </div>
-              <div class="landing-v2-mini-card">
-                <small>Student</small>
-                <strong>Track records</strong>
-              </div>
-              <div class="landing-v2-mini-card">
-                <small>Admin</small>
-                <strong>Control access</strong>
-              </div>
-              <div class="landing-v2-mini-card">
-                <small>System</small>
-                <strong>Stay responsive</strong>
+              <div class="landing-v3-preview-screen">
+                <div class="landing-v3-preview-head">
+                  <div>
+                    <small>Attendance Live</small>
+                    <strong>Teacher Command Desk</strong>
+                  </div>
+                  <span class="landing-v3-badge success">Camera Ready</span>
+                </div>
+                <div class="landing-v3-mini-kpis">
+                  <div class="landing-v3-mini-kpi">
+                    <span>Present</span>
+                    <strong>46</strong>
+                  </div>
+                  <div class="landing-v3-mini-kpi">
+                    <span>Unknown</span>
+                    <strong>02</strong>
+                  </div>
+                  <div class="landing-v3-mini-kpi">
+                    <span>Accuracy</span>
+                    <strong>94%</strong>
+                  </div>
+                </div>
+                <div class="landing-v3-feed">
+                  <div class="landing-v3-feed-row">
+                    <div class="landing-v3-feed-user">
+                      <div class="landing-v3-avatar">AI</div>
+                      <div>
+                        <strong>Live classroom scan</strong>
+                        <span>Face match engine warmed up</span>
+                      </div>
+                    </div>
+                    <div class="landing-v3-dot"></div>
+                  </div>
+                  <div class="landing-v3-feed-row">
+                    <div class="landing-v3-feed-user">
+                      <div class="landing-v3-avatar">UP</div>
+                      <div>
+                        <strong>Upload attendance</strong>
+                        <span>Class photo review enabled</span>
+                      </div>
+                    </div>
+                    <span class="landing-v3-pill blue">Photo Mode</span>
+                  </div>
+                  <div class="landing-v3-feed-row">
+                    <div class="landing-v3-feed-user">
+                      <div class="landing-v3-avatar">MN</div>
+                      <div>
+                        <strong>Manual backup</strong>
+                        <span>Always available as fallback</span>
+                      </div>
+                    </div>
+                    <span class="landing-v3-pill green">Ready</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-          <div class="landing-v2-kpi-row">
-            <div class="landing-v2-kpi">
-              <small>Flow</small>
-              <strong>Front page</strong>
-            </div>
-            <div class="landing-v2-kpi">
-              <small>Access</small>
-              <strong>Role based</strong>
-            </div>
-            <div class="landing-v2-kpi">
-              <small>Device</small>
-              <strong>Mobile ready</strong>
+            <div class="landing-v3-phone">
+              <div class="landing-v3-phone-screen">
+                <div class="landing-v3-phone-head">
+                  <div>
+                    <small>Mobile View</small>
+                    <strong>Teacher Quick Mode</strong>
+                  </div>
+                  <span class="landing-v3-pill green">Live</span>
+                </div>
+                <div class="landing-v3-phone-item">
+                  <div>
+                    <strong>Start camera</strong>
+                    <span>Fast attendance</span>
+                  </div>
+                  <span class="landing-v3-pill blue">Tap</span>
+                </div>
+                <div class="landing-v3-phone-item">
+                  <div>
+                    <strong>Upload photo</strong>
+                    <span>Class snapshot</span>
+                  </div>
+                  <span class="landing-v3-pill blue">Scan</span>
+                </div>
+                <div class="landing-v3-phone-item">
+                  <div>
+                    <strong>Manual list</strong>
+                    <span>Review students</span>
+                  </div>
+                  <span class="landing-v3-pill green">Safe</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       <section class="landing-v2-strip glass-card">
-        <span>Face recognition</span>
-        <b>+</b>
-        <span>Class photo attendance</span>
-        <b>+</b>
-        <span>Manual fallback</span>
-        <b>+</b>
-        <span>Student tracking</span>
-        <b>+</b>
-        <span>Admin oversight</span>
-        <b>+</b>
-        <span>Responsive portal</span>
+        <div class="landing-v3-ticker">
+          <div class="landing-v3-ticker-track">
+            <span>Face recognition</span>
+            <span>Live classroom camera</span>
+            <span>Group photo upload</span>
+            <span>Manual fallback</span>
+            <span>Student records</span>
+            <span>Admin control</span>
+            <span>Phone ready portal</span>
+            <span>Face recognition</span>
+            <span>Live classroom camera</span>
+            <span>Group photo upload</span>
+            <span>Manual fallback</span>
+            <span>Student records</span>
+            <span>Admin control</span>
+            <span>Phone ready portal</span>
+          </div>
+        </div>
       </section>
 
       <section class="landing-v2-section" id="home-platform">
         <div class="landing-v2-section-head">
           <div>
             <span class="landing-v2-chip">Platform Highlights</span>
-            <h3>Everything important stays visible in seconds.</h3>
+            <h3>Visual modules, short copy, faster first impression.</h3>
           </div>
-          <p>Inspired by modern SaaS landing pages, but still practical for a real attendance system that needs to be used every day.</p>
+          <p>The front page now shows product blocks instead of long paragraphs everywhere.</p>
         </div>
-        <div class="landing-v2-feature-grid">
-          <article class="landing-v2-feature-card glass-card is-wide">
-            <span class="landing-v2-feature-tag">01 Portal Experience</span>
-            <h3>Fast entry, clearer actions, and a home screen that finally feels official.</h3>
-            <p>Visitors can understand the platform before they sign in, while teachers and students still reach the working portal in one clean step.</p>
+        <div class="landing-v3-module-grid">
+          <article class="landing-v3-visual-card glass-card">
+            <div class="landing-v3-card-head">
+              <div>
+                <small>Portal Visual</small>
+                <strong>Attendance at a glance</strong>
+              </div>
+              <span class="landing-v3-badge primary">UI Preview</span>
+            </div>
+            <div class="landing-v3-visual-grid">
+              <div class="landing-v3-stack-card">
+                <div class="landing-v3-bars">
+                  <div class="landing-v3-bar"><span style="width:92%"></span></div>
+                  <div class="landing-v3-bar"><span style="width:74%"></span></div>
+                  <div class="landing-v3-bar"><span style="width:88%"></span></div>
+                  <div class="landing-v3-bar"><span style="width:63%"></span></div>
+                </div>
+              </div>
+              <div class="landing-v3-panel-card">
+                <div class="landing-v3-module-list">
+                  <div class="landing-v3-module-line">
+                    <strong>Camera AI</strong>
+                    <span>Live</span>
+                  </div>
+                  <div class="landing-v3-module-line">
+                    <strong>Upload Scan</strong>
+                    <span>Ready</span>
+                  </div>
+                  <div class="landing-v3-module-line">
+                    <strong>Manual Mode</strong>
+                    <span>Safe</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </article>
-          <article class="landing-v2-feature-card glass-card">
-            <span class="landing-v2-feature-tag">02 AI Tools</span>
-            <h3>Live camera and upload attendance in one workspace.</h3>
-            <p>Teachers keep both attendance modes close together instead of hunting through different screens.</p>
-          </article>
-          <article class="landing-v2-feature-card glass-card">
-            <span class="landing-v2-feature-tag">03 Records</span>
-            <h3>Manual attendance, summaries, and subject visibility.</h3>
-            <p>Even when AI is not enough, the academic workflow still feels complete and usable.</p>
-          </article>
-          <article class="landing-v2-feature-card glass-card">
-            <span class="landing-v2-feature-tag">04 Access</span>
-            <h3>Teacher, student, and admin journeys stay separated.</h3>
-            <p>Role-based entry removes confusion and makes the product look more polished right after deployment.</p>
-          </article>
+          <div class="landing-v3-module-cards">
+            <article class="landing-v3-module-card glass-card">
+              <h4>Live Camera</h4>
+              <p>Open camera, capture class, mark attendance quickly.</p>
+            </article>
+            <article class="landing-v3-module-card glass-card">
+              <h4>Photo Upload</h4>
+              <p>Use a group photo when the class is already assembled.</p>
+            </article>
+            <article class="landing-v3-module-card glass-card">
+              <h4>Manual Backup</h4>
+              <p>Keep attendance moving when AI is not the right choice.</p>
+            </article>
+          </div>
         </div>
       </section>
 
       <section class="landing-v2-section landing-v2-section-split" id="home-workflow">
-        <div class="landing-v2-story glass-card">
-          <span class="landing-v2-chip alt">Daily Workflow</span>
-          <h3>One system, four clean moves, zero messy handoff.</h3>
-          <p>The landing page now leads naturally into the real product flow. Instead of dropping users straight into a plain login card, the site builds trust first and then moves them into secure actions.</p>
-          <div class="landing-v2-story-points">
-            <div class="landing-v2-story-point">The first screen introduces the product like a real campus platform, not a raw form.</div>
-            <div class="landing-v2-story-point">The login area still stays direct, so regular users are not slowed down.</div>
-            <div class="landing-v2-story-point">The same design language carries into teacher, student, and admin access.</div>
+        <div class="landing-v2-section-head">
+          <div>
+            <span class="landing-v2-chip alt">Experience Flow</span>
+            <h3>Short path in, sharp interface out.</h3>
           </div>
+          <p>Open the portal, choose the role, and move straight to the right tool.</p>
         </div>
-        <div class="landing-v2-step-stack">
-          <article class="landing-v2-step-card glass-card">
-            <div class="landing-v2-step-no">01</div>
-            <div>
-              <h3>Land on the public front page</h3>
-              <p>Visitors see a proper product introduction, call-to-action buttons, and clear navigation before entering the portal.</p>
-            </div>
+        <div class="landing-v3-flow-grid">
+          <article class="landing-v3-flow-card glass-card">
+            <div class="landing-v3-flow-no">01</div>
+            <h4>Open Portal</h4>
+            <p>One front page, one direct entry button, zero confusion.</p>
           </article>
-          <article class="landing-v2-step-card glass-card">
-            <div class="landing-v2-step-no">02</div>
-            <div>
-              <h3>Open secure role access</h3>
-              <p>Teachers, students, and admins each move into their own login and dashboard flow without mixing responsibilities.</p>
-            </div>
+          <article class="landing-v3-flow-card glass-card">
+            <div class="landing-v3-flow-no">02</div>
+            <h4>Choose Role</h4>
+            <p>Teacher, student, and admin paths stay clearly separated.</p>
           </article>
-          <article class="landing-v2-step-card glass-card">
-            <div class="landing-v2-step-no">03</div>
-            <div>
-              <h3>Run attendance your way</h3>
-              <p>Use camera AI, upload a classroom photo, or switch to manual attendance when the session needs a faster fallback.</p>
-            </div>
-          </article>
-          <article class="landing-v2-step-card glass-card">
-            <div class="landing-v2-step-no">04</div>
-            <div>
-              <h3>Review records and profiles</h3>
-              <p>Students can check their own side, while admins and teachers manage records, attendance corrections, and platform access.</p>
-            </div>
+          <article class="landing-v3-flow-card glass-card">
+            <div class="landing-v3-flow-no">03</div>
+            <h4>Mark Attendance</h4>
+            <p>Use live AI, photo upload, or manual attendance from one place.</p>
           </article>
         </div>
       </section>
@@ -4384,77 +5036,95 @@
         <div class="landing-v2-section-head">
           <div>
             <span class="landing-v2-chip">Who Uses It</span>
-            <h3>Built for the people who actually run attendance every day.</h3>
+            <h3>Three roles, three clean entry points.</h3>
           </div>
-          <p>The front page now speaks to all three roles instead of feeling like a hidden internal panel with no introduction.</p>
+          <p>Less explanation, more direct role cards.</p>
         </div>
-        <div class="landing-v2-role-grid">
-          <article class="landing-v2-role-card glass-card">
-            <div class="landing-v2-role-top">
+        <div class="landing-v3-access-grid">
+          <article class="landing-v3-access-card glass-card">
+            <div class="landing-v3-access-top">
               <div>
-                <span class="landing-v2-role-label">Teacher Portal</span>
-                <h3>Take attendance fast</h3>
+                <span class="landing-v2-role-label">Teacher</span>
+                <h4>Run the class flow</h4>
               </div>
-              <div class="landing-v2-role-badge">TR</div>
+              <div class="landing-v3-access-mark">TR</div>
             </div>
-            <p>Camera attendance, photo upload, manual marking, registered students, and corrections stay in one operational dashboard.</p>
+            <p>Start camera, upload group photo, check students, and fix attendance from one dashboard.</p>
           </article>
-          <article class="landing-v2-role-card glass-card">
-            <div class="landing-v2-role-top">
+          <article class="landing-v3-access-card glass-card">
+            <div class="landing-v3-access-top">
               <div>
-                <span class="landing-v2-role-label">Student Portal</span>
-                <h3>Check attendance clearly</h3>
+                <span class="landing-v2-role-label">Student</span>
+                <h4>Track your record</h4>
               </div>
-              <div class="landing-v2-role-badge">ST</div>
+              <div class="landing-v3-access-mark">ST</div>
             </div>
-            <p>Students get a cleaner view for profile details, attendance percentage, and subject-side records without admin clutter.</p>
+            <p>See attendance, profile details, and subject-wise progress in a simpler portal view.</p>
           </article>
-          <article class="landing-v2-role-card glass-card">
-            <div class="landing-v2-role-top">
+          <article class="landing-v3-access-card glass-card">
+            <div class="landing-v3-access-top">
               <div>
-                <span class="landing-v2-role-label">Admin Panel</span>
-                <h3>Control the platform</h3>
+                <span class="landing-v2-role-label">Admin</span>
+                <h4>Control the system</h4>
               </div>
-              <div class="landing-v2-role-badge">AD</div>
+              <div class="landing-v3-access-mark">AD</div>
             </div>
-            <p>Admin actions, record cleanup, account recovery, and oversight stay protected behind the higher-level access flow.</p>
-          </article>
-          <article class="landing-v2-role-card glass-card">
-            <div class="landing-v2-role-top">
-              <div>
-                <span class="landing-v2-role-label">Device Fit</span>
-                <h3>Use it on phone too</h3>
-              </div>
-              <div class="landing-v2-role-badge">MB</div>
-            </div>
-            <p>The landing content now collapses into clean stacked sections so the same portal looks intentional on smaller screens too.</p>
+            <p>Manage users, records, recovery, and platform-level changes with protected access.</p>
           </article>
         </div>
       </section>
 
       <section class="landing-v2-proof-grid">
-        <article class="landing-v2-proof-card glass-card">
-          <span class="landing-v2-chip alt">Why This Feels Better</span>
-          <h3>A stronger first impression without changing the working core of your project.</h3>
-          <p>The old version looked like a direct login page with a little extra content. This new version behaves more like a product landing experience: it explains what the system is, shows the workflow, highlights the modules, and then pushes users into the portal with more confidence.</p>
-          <div class="landing-v2-proof-note">You still keep the same teacher, student, and admin pages after this. The redesign is focused on the first impression so deployment feels closer to a real polished platform.</div>
+        <article class="landing-v3-visual-card glass-card">
+          <div class="landing-v3-card-head">
+            <div>
+              <small>Design Mood</small>
+              <strong>Clean, bright, and product-like</strong>
+            </div>
+            <span class="landing-v3-badge primary">Visual</span>
+          </div>
+          <div class="landing-v3-visual-grid">
+            <div class="landing-v3-stack-card">
+              <div class="landing-v3-bars">
+                <div class="landing-v3-bar"><span style="width:85%"></span></div>
+                <div class="landing-v3-bar"><span style="width:58%"></span></div>
+                <div class="landing-v3-bar"><span style="width:76%"></span></div>
+              </div>
+            </div>
+            <div class="landing-v3-panel-card">
+              <div class="landing-v3-module-list">
+                <div class="landing-v3-module-line">
+                  <strong>Visual cards</strong>
+                  <span>Yes</span>
+                </div>
+                <div class="landing-v3-module-line">
+                  <strong>Motion cues</strong>
+                  <span>Yes</span>
+                </div>
+                <div class="landing-v3-module-line">
+                  <strong>Heavy text</strong>
+                  <span>Cut</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </article>
         <div class="landing-v2-proof-stats">
           <div class="landing-v2-proof-stat">
-            <small>Entry</small>
-            <strong>Public home plus secure portal</strong>
+            <small>Style</small>
+            <strong>Visual first</strong>
           </div>
           <div class="landing-v2-proof-stat">
-            <small>Design</small>
-            <strong>Multi-section landing flow</strong>
+            <small>Copy</small>
+            <strong>Shorter blocks</strong>
           </div>
           <div class="landing-v2-proof-stat">
-            <small>Usage</small>
-            <strong>Teacher, student, and admin ready</strong>
+            <small>Motion</small>
+            <strong>Floating previews</strong>
           </div>
           <div class="landing-v2-proof-stat">
-            <small>Screen size</small>
-            <strong>Desktop and mobile responsive</strong>
+            <small>Device</small>
+            <strong>Still responsive</strong>
           </div>
         </div>
       </section>
@@ -4462,8 +5132,8 @@
       <section class="landing-v2-cta-block glass-card" id="home-launch">
         <div class="landing-v2-cta-copy">
           <span class="landing-v2-chip">Launch the Portal</span>
-          <h3>Ready to open the attendance system without the weak first impression?</h3>
-          <p>Jump into the secure portal right now or onboard a new teacher or student from the front page itself.</p>
+          <h3>Open the portal from a front page that actually feels polished.</h3>
+          <p>Go straight in or register from here.</p>
         </div>
         <div class="landing-actions">
           <button class="btn-primary" onclick="goTo('pg-login')">Open Secure Portal</button>
