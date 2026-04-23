@@ -4667,6 +4667,33 @@
         font-size: 19px
       }
     }
+    /* NEW HERO & LOGIN IMAGE ANIMATIONS */
+    .hero-image-animated {
+      width: 100%;
+      max-width: 500px;
+      height: auto;
+      border-radius: 24px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--card-border);
+      animation: stickerFloat 6s ease-in-out infinite;
+      transition: transform var(--transition);
+      display: block;
+      margin: 0 auto;
+    }
+    
+    .hero-image-animated:hover {
+      transform: translateY(-20px) scale(1.02);
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4), 0 0 0 2px var(--glow2);
+    }
+
+    .login-image-animated {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      margin: 0 auto 16px auto;
+      display: block;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--card-border);
+      animation: pulse 4s infinite, stickerFloat 5s ease-in-out infinite;
+    }
   </style>
 </head>
 
@@ -4823,103 +4850,8 @@
             </div>
           </div>
         </div>
-        <div class="landing-v2-aside">
-          <div class="landing-v3-preview">
-            <div class="landing-v3-dashboard">
-              <div class="landing-v3-preview-top">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-              <div class="landing-v3-preview-screen">
-                <div class="landing-v3-preview-head">
-                  <div>
-                    <small>Attendance Live</small>
-                    <strong>Teacher Command Desk</strong>
-                  </div>
-                  <span class="landing-v3-badge success">Camera Ready</span>
-                </div>
-                <div class="landing-v3-mini-kpis">
-                  <div class="landing-v3-mini-kpi">
-                    <span>Present</span>
-                    <strong>46</strong>
-                  </div>
-                  <div class="landing-v3-mini-kpi">
-                    <span>Unknown</span>
-                    <strong>02</strong>
-                  </div>
-                  <div class="landing-v3-mini-kpi">
-                    <span>Accuracy</span>
-                    <strong>94%</strong>
-                  </div>
-                </div>
-                <div class="landing-v3-feed">
-                  <div class="landing-v3-feed-row">
-                    <div class="landing-v3-feed-user">
-                      <div class="landing-v3-avatar">AI</div>
-                      <div>
-                        <strong>Live classroom scan</strong>
-                        <span>Face match engine warmed up</span>
-                      </div>
-                    </div>
-                    <div class="landing-v3-dot"></div>
-                  </div>
-                  <div class="landing-v3-feed-row">
-                    <div class="landing-v3-feed-user">
-                      <div class="landing-v3-avatar">UP</div>
-                      <div>
-                        <strong>Upload attendance</strong>
-                        <span>Class photo review enabled</span>
-                      </div>
-                    </div>
-                    <span class="landing-v3-pill blue">Photo Mode</span>
-                  </div>
-                  <div class="landing-v3-feed-row">
-                    <div class="landing-v3-feed-user">
-                      <div class="landing-v3-avatar">MN</div>
-                      <div>
-                        <strong>Manual backup</strong>
-                        <span>Always available as fallback</span>
-                      </div>
-                    </div>
-                    <span class="landing-v3-pill green">Ready</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="landing-v3-phone">
-              <div class="landing-v3-phone-screen">
-                <div class="landing-v3-phone-head">
-                  <div>
-                    <small>Mobile View</small>
-                    <strong>Teacher Quick Mode</strong>
-                  </div>
-                  <span class="landing-v3-pill green">Live</span>
-                </div>
-                <div class="landing-v3-phone-item">
-                  <div>
-                    <strong>Start camera</strong>
-                    <span>Fast attendance</span>
-                  </div>
-                  <span class="landing-v3-pill blue">Tap</span>
-                </div>
-                <div class="landing-v3-phone-item">
-                  <div>
-                    <strong>Upload photo</strong>
-                    <span>Class snapshot</span>
-                  </div>
-                  <span class="landing-v3-pill blue">Scan</span>
-                </div>
-                <div class="landing-v3-phone-item">
-                  <div>
-                    <strong>Manual list</strong>
-                    <span>Review students</span>
-                  </div>
-                  <span class="landing-v3-pill green">Safe</span>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="landing-v2-aside" style="display: flex; align-items: center; justify-content: center; padding: 20px;">
+          <img src="/static/images/landing_hero.png" class="hero-image-animated" alt="AI Attendance Visualization">
         </div>
       </section>
 
@@ -5223,8 +5155,9 @@
 ════════════════════════════════════════ -->
   <div class="page active center-page" id="pg-login">
     <div class="login-wrap">
+      <img src="/static/images/login_hero.png" class="login-image-animated" alt="Secure Login">
       <div class="inst-badge">
-        <div class="seal">🎓</div>
+        <div class="seal" style="display:none;">🎓</div>
         <h2>Delhi Skill Entrepreneurship University</h2>
         <p>AI Face Recognition Attendance System</p>
       </div>
