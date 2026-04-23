@@ -85,6 +85,9 @@ REFERENCE_DETECTOR_BACKEND = os.getenv("REFERENCE_DETECTOR_BACKEND", "retinaface
 FALLBACK_DETECTOR_BACKEND = os.getenv("FALLBACK_DETECTOR_BACKEND", "retinaface")
 REFERENCE_MAX_IMAGE_DIMENSION = int(os.getenv("REFERENCE_MAX_IMAGE_DIMENSION", "960"))
 CLASSROOM_MAX_IMAGE_DIMENSION = int(os.getenv("CLASSROOM_MAX_IMAGE_DIMENSION", "1600"))
+CAMERA_MAX_IMAGE_DIMENSION = int(os.getenv("CAMERA_MAX_IMAGE_DIMENSION", "960"))
+CAMERA_SECONDARY_DETECTOR_BACKEND = os.getenv("CAMERA_SECONDARY_DETECTOR_BACKEND", "").strip().lower()
+CAMERA_ALLOW_FALLBACK_DETECTOR = os.getenv("CAMERA_ALLOW_FALLBACK_DETECTOR", "0").strip() == "1"
 MAX_REQUEST_SIZE_MB = max(2, int(os.getenv("MAX_REQUEST_SIZE_MB", "8")))
 MAX_UPLOAD_PHOTOS_PER_REQUEST = max(1, int(os.getenv("MAX_UPLOAD_PHOTOS_PER_REQUEST", "12")))
 MAX_REFERENCE_PHOTOS_PER_STUDENT = max(1, int(os.getenv("MAX_REFERENCE_PHOTOS_PER_STUDENT", "5")))
@@ -760,9 +763,10 @@ def l2_normalize_embedding(embedding):
     return embedding_array / norm
 
 
-def get_detector_backends(primary_backend, secondary_backend=None):
+def get_detector_backends(primary_backend, secondary_backend=None, allow_fallback=True):
     ordered_backends = []
-    for backend in (primary_backend, secondary_backend, FALLBACK_DETECTOR_BACKEND):
+    fallback_backend = FALLBACK_DETECTOR_BACKEND if allow_fallback else ""
+    for backend in (primary_backend, secondary_backend, fallback_backend):
         backend_name = str(backend or "").strip().lower()
         if backend_name and backend_name not in ordered_backends:
             ordered_backends.append(backend_name)
@@ -788,11 +792,15 @@ def select_reference_photo_paths(student_folder):
     return [photo_paths[index] for index in unique_indices]
 
 
-def represent_with_fallback(img_path, detector_backend, secondary_backend=None):
+def represent_with_fallback(img_path, detector_backend, secondary_backend=None, allow_fallback=True):
     ensure_face_runtime_ready()
     errors = []
 
-    for backend_name in get_detector_backends(detector_backend, secondary_backend):
+    for backend_name in get_detector_backends(
+        detector_backend,
+        secondary_backend,
+        allow_fallback=allow_fallback,
+    ):
         try:
             representations = DeepFace.represent(
                 img_path=str(img_path),
@@ -2113,6 +2121,7 @@ def take_attendance():
     marked_by = request.form.get("marked_by", "teacher").strip() or "teacher"
     subject = normalize_subject(request.form.get("subject"))
     attendance_mode = request.form.get("attendance_mode", "camera").strip().lower()
+    is_camera_mode = attendance_mode == "camera"
     primary_detector = (
         UPLOAD_CLASSROOM_DETECTOR_BACKEND
         if attendance_mode == "upload"
@@ -2121,14 +2130,16 @@ def take_attendance():
     secondary_detector = (
         CAMERA_CLASSROOM_DETECTOR_BACKEND
         if attendance_mode == "upload"
-        else UPLOAD_CLASSROOM_DETECTOR_BACKEND
+        else CAMERA_SECONDARY_DETECTOR_BACKEND
     )
+    allow_detector_fallback = (not is_camera_mode) or CAMERA_ALLOW_FALLBACK_DETECTOR
+    max_image_dimension = CAMERA_MAX_IMAGE_DIMENSION if is_camera_mode else CLASSROOM_MAX_IMAGE_DIMENSION
 
     temp_path = None
     try:
         temp_path = save_temp_rgb_image(
             request.files["photo"],
-            max_dimension=CLASSROOM_MAX_IMAGE_DIMENSION,
+            max_dimension=max_image_dimension,
         )
     except Exception as exc:
         return jsonify({"success": False, "message": f"Photo load error: {exc}"})
@@ -2142,6 +2153,7 @@ def take_attendance():
             temp_path,
             primary_detector,
             secondary_detector,
+            allow_fallback=allow_detector_fallback,
         )
 
         for face_data in class_embeddings:

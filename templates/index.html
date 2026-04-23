@@ -6460,7 +6460,7 @@
       });
     }
 
-    async function captureVideoFrameBlob(video, maxDimension = 1280, quality = 0.82) {
+    async function captureVideoFrameBlob(video, maxDimension = 960, quality = 0.76) {
       const width = video.videoWidth || 1280;
       const height = video.videoHeight || 720;
       const scale = Math.min(1, maxDimension / Math.max(width, height));
@@ -7570,11 +7570,11 @@
         showMsg(msg, '⚠️ Start the camera first, then capture attendance.', 'error');
         return;
       }
-      stopCamera();
-      document.getElementById('cam-status-label').textContent = '🧠 AI Processing...';
-      showMsg(msg, '⏳ AI face recognition is running — please wait...', 'info');
       try {
-        const blob = await captureVideoFrameBlob(video, 1280, 0.82);
+        const blob = await captureVideoFrameBlob(video, 960, 0.76);
+        stopCamera();
+        document.getElementById('cam-status-label').textContent = '🧠 AI Processing...';
+        showMsg(msg, '⏳ AI face recognition is running — please wait...', 'info');
         const date = document.getElementById('cam-date').value || new Date().toISOString().slice(0, 10);
         const formData = new FormData();
         formData.append('photo', blob, 'class_photo.jpg');
@@ -7595,7 +7595,16 @@
         }
       } catch (e) {
         document.getElementById('cam-status-label').textContent = '❌ Error';
-        showMsg(msg, '❌ Error: ' + formatClientError(e), 'error');
+        const friendlyError = formatClientError(e);
+        if (/server returned 502/i.test(friendlyError)) {
+          showMsg(
+            msg,
+            '❌ Camera attendance is too heavy for the server right now. Please retry once, or use Upload Class Photo for better stability.',
+            'error'
+          );
+          return;
+        }
+        showMsg(msg, '❌ Error: ' + friendlyError, 'error');
       }
     }
     function previewAttPhoto(e) {
