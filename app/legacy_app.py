@@ -578,12 +578,13 @@ def invalidate_face_cache():
 
 
 def is_valid_face_cache_payload(data):
+    if not isinstance(data, dict):
+        return False
     faces = data.get("faces", [])
     names = data.get("names", [])
     reference_faces = data.get("reference_faces", {})
     return (
-        isinstance(data, dict)
-        and data.get("version") == FACE_CACHE_VERSION
+        data.get("version") == FACE_CACHE_VERSION
         and data.get("model_name") == FACE_MODEL_NAME
         and data.get("distance_metric") == FACE_DISTANCE_METRIC
         and isinstance(faces, list)
@@ -801,6 +802,23 @@ def count_student_photo_files(name="", roll="", userid=""):
     return 0
 
 
+def count_reference_photo_profiles():
+    if not PHOTOS_DIR.exists():
+        return 0
+
+    profile_count = 0
+    for folder in PHOTOS_DIR.iterdir():
+        if not folder.exists() or not folder.is_dir():
+            continue
+        has_any_photo = any(
+            photo_path.is_file() and photo_path.suffix.lower() in ALLOWED_IMAGE_EXTENSIONS
+            for photo_path in folder.iterdir()
+        )
+        if has_any_photo:
+            profile_count += 1
+    return profile_count
+
+
 def is_student_account_complete(student):
     if not student:
         return False
@@ -817,7 +835,19 @@ def refresh_cached_student_embedding(name, roll):
         )
 
     if not cache_payload:
-        return False, "AI cache is not ready yet. The first attendance run will do a quick warm-up."
+        load_known_faces()
+        if known_faces:
+            return True, f"AI recognition cache was built for {len(known_faces)} student(s)."
+        photo_profiles = count_reference_photo_profiles()
+        if photo_profiles == 0:
+            return (
+                False,
+                "Face photos were saved, but no student reference photo profiles are available yet.",
+            )
+        return (
+            False,
+            "Face photos were saved, but AI could not build the first recognition cache from the current uploads.",
+        )
 
     student_folder = resolve_student_photo_folder(name, roll)
     resolved_label = resolve_student_cache_label(name, roll)
@@ -1906,7 +1936,12 @@ def upload_photos():
     had_existing_cache = bool(read_face_cache_payload() or (known_faces and len(known_faces) == len(known_names)))
     cache_message = "AI cache refresh has been queued in the background."
     try:
-        queue_cache_refresh(refresh_cached_student_embedding, name, roll)
+        _ = queue_cache_refresh(refresh_cached_student_embedding, name, roll)
+        if not had_existing_cache:
+            cache_message = (
+                "AI is building the first recognition cache in the background. "
+                "Please wait a short moment before taking attendance."
+            )
     except RuntimeError as exc:
         logger.warning("Unable to queue face cache refresh: %s", exc)
         cache_message = "AI cache will refresh on the next attendance run."
@@ -1940,7 +1975,28 @@ def take_attendance():
     if not known_faces:
         load_known_faces()
     if not known_faces:
-        return jsonify({"success": False, "message": "No students are registered yet! Upload photos first."})
+        reference_profile_count = count_reference_photo_profiles()
+        if reference_profile_count == 0:
+            return jsonify(
+                {
+                    "success": False,
+                    "message": (
+                        "No student reference face photos are available on this server yet. "
+                        "First upload each student's face photos from the Face Photos section, then upload the class photo for attendance."
+                    ),
+                    "photo_profile_count": 0,
+                }
+            )
+        return jsonify(
+            {
+                "success": False,
+                "message": (
+                    f"{reference_profile_count} student photo profile(s) were found, but AI could not build recognition data from them yet. "
+                    "Please wait a little for the first AI cache build, or re-upload clear student face photos."
+                ),
+                "photo_profile_count": reference_profile_count,
+            }
+        )
 
     date = request.form.get("date", datetime.now().strftime("%Y-%m-%d")).strip()
     marked_by = request.form.get("marked_by", "teacher").strip() or "teacher"
@@ -2083,6 +2139,7 @@ def ai_runtime_status():
     warm = request.args.get("warm", "0").strip() == "1"
     runtime_ready = False
     cache_ready = bool(known_faces)
+    reference_profile_count = count_reference_photo_profiles()
     message = "AI runtime has not been warmed yet."
 
     if warm:
@@ -2105,6 +2162,7 @@ def ai_runtime_status():
                         "ready": False,
                         "cache_ready": False,
                         "known_faces_count": 0,
+                        "reference_profile_count": reference_profile_count,
                         "message": str(exc),
                     }
                 ),
@@ -2125,6 +2183,7 @@ def ai_runtime_status():
             "ready": runtime_ready,
             "cache_ready": cache_ready,
             "known_faces_count": len(known_faces),
+            "reference_profile_count": reference_profile_count,
             "message": message,
         }
     )
