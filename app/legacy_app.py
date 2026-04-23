@@ -72,6 +72,9 @@ PHOTOS_DIR = settings.photos_dir
 EMBEDDINGS_FILE = settings.embeddings_file
 ATTENDANCE_DIR = settings.attendance_dir
 TEMP_DIR = settings.temp_dir
+BUNDLED_DATABASE_PATH = BASE_DIR / "database" / "teachers.db"
+BUNDLED_PHOTOS_DIR = BASE_DIR / "photos"
+BUNDLED_EMBEDDINGS_FILE = BASE_DIR / "embeddings.pkl"
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"}
 FACE_MODEL_NAME = os.getenv("FACE_MODEL_NAME", "Facenet")
 FACE_DISTANCE_METRIC = os.getenv("FACE_DISTANCE_METRIC", "cosine").lower()
@@ -162,6 +165,113 @@ def handle_request_entity_too_large(_error):
 def ensure_directories():
     for directory in (DATABASE_PATH.parent, PHOTOS_DIR, ATTENDANCE_DIR, TEMP_DIR):
         directory.mkdir(parents=True, exist_ok=True)
+
+
+def count_image_files(root_path):
+    root = Path(root_path)
+    if not root.exists():
+        return 0
+
+    total = 0
+    for image_path in root.rglob("*"):
+        if image_path.is_file() and image_path.suffix.lower() in ALLOWED_IMAGE_EXTENSIONS:
+            total += 1
+    return total
+
+
+def count_photo_profiles(root_path):
+    root = Path(root_path)
+    if not root.exists():
+        return 0
+
+    profiles = 0
+    for child in root.iterdir():
+        if not child.is_dir():
+            continue
+        if any(
+            file_path.is_file() and file_path.suffix.lower() in ALLOWED_IMAGE_EXTENSIONS
+            for file_path in child.iterdir()
+        ):
+            profiles += 1
+    return profiles
+
+
+def sqlite_total_records(db_path):
+    db_file = Path(db_path)
+    if not db_file.exists() or db_file.stat().st_size == 0:
+        return 0
+
+    try:
+        with sqlite3.connect(db_file) as conn:
+            cursor = conn.cursor()
+            total = 0
+            for table_name in ("teachers", "students", "admins", "attendance"):
+                try:
+                    cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
+                    total += int(cursor.fetchone()[0] or 0)
+                except sqlite3.Error:
+                    continue
+            return total
+    except sqlite3.Error:
+        return 0
+
+
+def runtime_database_needs_seed():
+    if not DATABASE_PATH.exists() or DATABASE_PATH.stat().st_size == 0:
+        return True
+    return sqlite_total_records(DATABASE_PATH) == 0
+
+
+def copy_missing_photo_profiles(source_root, target_root):
+    source_root = Path(source_root)
+    target_root = Path(target_root)
+    if not source_root.exists():
+        return 0
+
+    copied_items = 0
+    target_root.mkdir(parents=True, exist_ok=True)
+
+    for source_dir in source_root.iterdir():
+        if not source_dir.is_dir():
+            continue
+
+        target_dir = target_root / source_dir.name
+        target_dir.mkdir(parents=True, exist_ok=True)
+        for image_path in source_dir.iterdir():
+            if not image_path.is_file() or image_path.suffix.lower() not in ALLOWED_IMAGE_EXTENSIONS:
+                continue
+            destination = target_dir / image_path.name
+            if destination.exists():
+                continue
+            shutil.copy2(image_path, destination)
+            copied_items += 1
+
+    return copied_items
+
+
+def seed_runtime_storage_from_bundle():
+    ensure_directories()
+
+    try:
+        if settings.storage_root.resolve() == BASE_DIR.resolve():
+            return
+    except OSError:
+        return
+
+    if BUNDLED_DATABASE_PATH.exists() and sqlite_total_records(BUNDLED_DATABASE_PATH) > 0:
+        if runtime_database_needs_seed():
+            DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(BUNDLED_DATABASE_PATH, DATABASE_PATH)
+            logger.info("Seeded runtime database from bundled project database")
+
+    if BUNDLED_PHOTOS_DIR.exists() and count_photo_profiles(BUNDLED_PHOTOS_DIR) > 0:
+        copied_images = copy_missing_photo_profiles(BUNDLED_PHOTOS_DIR, PHOTOS_DIR)
+        if copied_images:
+            logger.info("Seeded %s reference face image(s) from bundled project photos", copied_images)
+
+    if BUNDLED_EMBEDDINGS_FILE.exists() and not EMBEDDINGS_FILE.exists():
+        shutil.copy2(BUNDLED_EMBEDDINGS_FILE, EMBEDDINGS_FILE)
+        logger.info("Seeded runtime face cache from bundled embeddings")
 
 
 def get_db():
@@ -1176,6 +1286,7 @@ def load_known_faces():
     logger.info("Total %s students loaded for recognition", len(known_faces))
 
 
+seed_runtime_storage_from_bundle()
 create_database()
 
 
