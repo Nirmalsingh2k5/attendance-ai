@@ -453,7 +453,20 @@
       gap: 24px;
       padding: 34px;
       margin-bottom: 24px;
-      align-items: stretch
+      align-items: stretch;
+      position: relative;
+      overflow: hidden
+    }
+
+    .landing-hero::before {
+      content: '';
+      position: absolute;
+      inset: auto auto -120px -80px;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.2), transparent 70%);
+      pointer-events: none
     }
 
     .landing-copy .landing-kicker {
@@ -535,7 +548,8 @@
     }
 
     .landing-highlight {
-      padding: 24px
+      padding: 24px;
+      background: linear-gradient(165deg, rgba(37, 99, 235, 0.14), rgba(255, 255, 255, 0.04))
     }
 
     .landing-highlight h3 {
@@ -599,7 +613,8 @@
     }
 
     .landing-card {
-      padding: 22px
+      padding: 22px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04))
     }
 
     .landing-card .lc-ico {
@@ -695,10 +710,10 @@
 
     .landing-copy h2 {
       font-family: 'Syne', sans-serif;
-      font-size: clamp(46px, 7vw, 94px);
-      line-height: .94;
+      font-size: clamp(40px, 6vw, 76px);
+      line-height: .96;
       letter-spacing: -.06em;
-      max-width: 10ch
+      max-width: 11ch
     }
 
     .landing-copy p {
@@ -3205,6 +3220,15 @@
         padding: 24px
       }
 
+      .login-wrap,
+      .reg-wrap {
+        max-width: 100%
+      }
+
+      .table-wrap {
+        margin: 0 -6px
+      }
+
       .seal {
         width: 60px;
         height: 60px;
@@ -3360,9 +3384,23 @@
         padding: 20px
       }
 
+      .inst-badge h2 {
+        font-size: 15px;
+        line-height: 1.25
+      }
+
+      .inst-badge p {
+        font-size: 10px
+      }
+
       .role-tab {
         font-size: 11px;
         padding: 9px 4px
+      }
+
+      .role-tabs {
+        grid-template-columns: 1fr;
+        gap: 8px
       }
 
       .topnav .nav-btns {
@@ -3524,8 +3562,8 @@
       <div class="landing-hero glass-card">
         <div class="landing-copy">
           <div class="landing-kicker">DSEU Smart Attendance System</div>
-          <h2>Attendance management that feels official, fast and ready for deployment.</h2>
-          <p>This public front page can open first when someone visits your website. From here they can enter the portal, register, and then move into the teacher, student, or admin dashboards without confusion.</p>
+          <h2>One attendance portal for real classrooms, ready on laptop and phone.</h2>
+          <p>Run AI attendance, manual backup, and student records from one cleaner workflow. Teachers, students, and admins all enter the same portal without confusion after deployment.</p>
           <div class="landing-actions">
             <button class="btn-primary" onclick="goTo('pg-login')">Enter Portal</button>
             <button class="btn-secondary" onclick="goTo('pg-reg-teacher')">Register Teacher</button>
@@ -3548,8 +3586,8 @@
         <div class="landing-panel">
           <div class="landing-highlight">
             <span class="badge blue">Institution Workflow</span>
-            <h3>Public home page first, portal second, dashboards after login.</h3>
-            <p>This is the safer and more professional structure for deployment. Visitors land on the official home screen first, then enter the secure attendance portal.</p>
+            <h3>Open the portal, mark attendance, and review records without switching systems.</h3>
+            <p>The front page introduces the system clearly, then moves users into a secure portal where attendance and profile actions stay organized.</p>
           </div>
           <div class="landing-steps">
             <div class="landing-step">
@@ -4737,6 +4775,7 @@
     let studentPhotoUploadLocked = false;
     let manualStatus = {};
     let manualAttendanceHistory = [];
+    let faceRuntimeWarmupRequested = false;
 
     let activityLogs = [
       { type: 'blue', text: 'System started — DSEU AI Attendance Portal', time: fmtTime(new Date()) }
@@ -4771,6 +4810,118 @@
       el.style.animation = 'none';
       void el.offsetWidth;
       el.style.animation = type === 'error' ? 'shake .3s ease' : 'fadeIn .3s ease';
+    }
+
+    async function parseJsonResponse(response) {
+      const raw = await response.text();
+      try {
+        return { ok: response.ok, status: response.status, data: JSON.parse(raw) };
+      } catch (_error) {
+        return {
+          ok: false,
+          status: response.status,
+          data: {
+            success: false,
+            message: raw || `Server returned ${response.status}. Please try again.`
+          }
+        };
+      }
+    }
+
+    async function fetchJson(url, options) {
+      const response = await fetch(url, options);
+      return parseJsonResponse(response);
+    }
+
+    function formatClientError(error) {
+      const text = String(error || '');
+      if (text.includes('Failed to fetch')) {
+        return 'Unable to reach the server right now. Please retry in a few seconds.';
+      }
+      return text;
+    }
+
+    async function imageFileToBlob(fileOrBlob, maxDimension = 1600, quality = 0.86) {
+      return new Promise((resolve, reject) => {
+        const objectUrl = URL.createObjectURL(fileOrBlob);
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const width = img.naturalWidth || img.width || maxDimension;
+            const height = img.naturalHeight || img.height || maxDimension;
+            const scale = Math.min(1, maxDimension / Math.max(width, height));
+            const targetWidth = Math.max(1, Math.round(width * scale));
+            const targetHeight = Math.max(1, Math.round(height * scale));
+            const canvas = document.createElement('canvas');
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            const ctx = canvas.getContext('2d', { alpha: false });
+            ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+            canvas.toBlob(blob => {
+              URL.revokeObjectURL(objectUrl);
+              if (blob) {
+                resolve(blob);
+              } else {
+                reject(new Error('Unable to optimise image before upload.'));
+              }
+            }, 'image/jpeg', quality);
+          } catch (err) {
+            URL.revokeObjectURL(objectUrl);
+            reject(err);
+          }
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(objectUrl);
+          reject(new Error('Unable to read the selected image.'));
+        };
+        img.src = objectUrl;
+      });
+    }
+
+    async function captureVideoFrameBlob(video, maxDimension = 1280, quality = 0.82) {
+      const width = video.videoWidth || 1280;
+      const height = video.videoHeight || 720;
+      const scale = Math.min(1, maxDimension / Math.max(width, height));
+      const canvas = document.getElementById('snap-canvas');
+      canvas.width = Math.max(1, Math.round(width * scale));
+      canvas.height = Math.max(1, Math.round(height * scale));
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+      return new Promise((resolve, reject) => {
+        canvas.toBlob(blob => {
+          if (blob) resolve(blob);
+          else reject(new Error('Unable to capture the camera frame.'));
+        }, 'image/jpeg', quality);
+      });
+    }
+
+    async function warmFaceRecognitionRuntime(options = {}) {
+      const { silent = false, force = false } = options;
+      if (faceRuntimeWarmupRequested && !force) return;
+      faceRuntimeWarmupRequested = true;
+      try {
+        const { ok, data } = await fetchJson('/api/ai/runtime_status?warm=1');
+        if (!ok || !data.success) {
+          if (!silent) {
+            showMsg(
+              document.getElementById('cam-msg'),
+              'AI face engine is still warming up on the server. Please wait a few seconds and try again.',
+              'info'
+            );
+          }
+          return;
+        }
+        if (!silent && data.message) {
+          showMsg(document.getElementById('cam-msg'), data.message, 'success');
+        }
+      } catch (_error) {
+        if (!silent) {
+          showMsg(
+            document.getElementById('cam-msg'),
+            'AI services are waking up on the server. Please retry shortly.',
+            'info'
+          );
+        }
+      }
     }
 
     function fmtTime(d) { return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }); }
@@ -4809,6 +4960,9 @@
       const panel = document.getElementById(id);
       panel.classList.add('active');
       if (btn) btn.classList.add('active');
+      if (id === 'tab-camera' || id === 'tab-photos') {
+        warmFaceRecognitionRuntime({ silent: true });
+      }
       animateEntrance(panel);
     }
 
@@ -4896,28 +5050,13 @@
       const err = document.getElementById('login-err');
       if (!uid || !pass) { showMsg(err, '⚠️ Please enter your ID and Password.', 'error'); return; }
 
-      const parseApiResponse = async (response) => {
-        const raw = await response.text();
-        try {
-          return { ok: response.ok, data: JSON.parse(raw) };
-        } catch (_error) {
-          return {
-            ok: false,
-            data: {
-              success: false,
-              message: raw || `Server returned ${response.status}. Please try again.`
-            }
-          };
-        }
-      };
-
       if (currentRole === 'teacher') {
         fetch('/api/teacher/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userid: uid, password: pass })
         })
-          .then(parseApiResponse)
+          .then(parseJsonResponse)
           .then(({ ok, data }) => {
             if (ok && data.success) {
               err.style.display = 'none';
@@ -4930,7 +5069,7 @@
               addLog('red', `Failed teacher login: ${uid}`);
             }
           })
-          .catch(e => showMsg(err, '❌ Server error: ' + e, 'error'));
+          .catch(e => showMsg(err, '❌ Server error: ' + formatClientError(e), 'error'));
         return;
       }
 
@@ -4940,7 +5079,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userid: uid, password: pass })
         })
-          .then(parseApiResponse)
+          .then(parseJsonResponse)
           .then(({ ok, data }) => {
             if (ok && data.success) {
               err.style.display = 'none';
@@ -4952,7 +5091,7 @@
               addLog('red', `Failed student login: ${uid}`);
             }
           })
-          .catch(e => showMsg(err, '❌ Server error: ' + e, 'error'));
+          .catch(e => showMsg(err, '❌ Server error: ' + formatClientError(e), 'error'));
         return;
       }
 
@@ -4964,7 +5103,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userid: uid, password: pass, secret: secret })
         })
-          .then(parseApiResponse)
+          .then(parseJsonResponse)
           .then(({ ok, data }) => {
             if (ok && data.success) {
               adminFailCount = 0;
@@ -4981,7 +5120,7 @@
               if (adminFailCount >= 3) { adminLocked = true; showMsg(err, '🔒 Too many failed attempts. Refresh to try again.', 'error'); }
             }
           })
-          .catch(e => showMsg(err, '❌ Server error: ' + e, 'error'));
+          .catch(e => showMsg(err, '❌ Server error: ' + formatClientError(e), 'error'));
         return;
       }
     }
@@ -5007,6 +5146,7 @@
       buildAttTable();
       buildManualList();
       buildRegStudents();
+      setTimeout(() => warmFaceRecognitionRuntime({ silent: true }), 120);
     }
 
     function loadStudentDashboard(uid, data) {
@@ -5024,9 +5164,8 @@
       document.getElementById('s-p-email').textContent = data.email || '';
 
       // Load real attendance data
-      fetch(`/api/student/attendance?roll=${encodeURIComponent(data.roll || '')}`)
-        .then(r => r.json())
-        .then(att => {
+      fetchJson(`/api/student/attendance?roll=${encodeURIComponent(data.roll || '')}`)
+        .then(({ data: att }) => {
           const present = att.present || 0;
           const total = att.total || 0;
           const pct = att.percentage || 0;
@@ -5075,6 +5214,13 @@
         })
         .catch(() => {
           document.getElementById('s-att-summary').innerHTML = '<div class="att-card"><div class="att-subject">Attendance data unavailable</div><div class="att-info">Please try again in a moment.</div></div>';
+        })
+        .catch(() => {
+          document.getElementById('s-total-classes').textContent = '0';
+          document.getElementById('s-present').textContent = '0';
+          document.getElementById('s-pct').textContent = '0%';
+          document.getElementById('s-status').textContent = 'Unavailable';
+          document.getElementById('s-att-summary').innerHTML = `<div class="att-card"><div class="att-subject">Attendance data is temporarily unavailable</div><div class="att-info">Please retry in a few moments.</div></div>`;
         });
 
       // Store the student roll number for photo uploads
@@ -5152,10 +5298,9 @@
       const url = dateFilter
         ? `/api/admin/attendance_records?date=${encodeURIComponent(dateFilter)}`
         : '/api/admin/attendance_records';
-      fetch(url)
-        .then(r => r.json())
-        .then(data => {
-          if (!data.success) {
+      fetchJson(url)
+        .then(({ ok, data }) => {
+          if (!ok || !data.success) {
             tbody.innerHTML = '<tr><td colspan="8" style="color:var(--text3);text-align:center;padding:16px">Unable to load attendance records.</td></tr>';
             showMsg(msg, '❌ Unable to load attendance records.', 'error');
             return;
@@ -5185,7 +5330,7 @@
         })
         .catch(e => {
           tbody.innerHTML = '<tr><td colspan="8" style="color:var(--text3);text-align:center;padding:16px">Unable to load attendance records.</td></tr>';
-          showMsg(msg, '❌ Error: ' + e, 'error');
+          showMsg(msg, '❌ Error: ' + formatClientError(e), 'error');
         });
     }
 
@@ -5214,17 +5359,16 @@
           setTimeout(attachAdminResetButtons, 150);
           buildAttTable();
         })
-        .catch(e => showMsg(msg, '❌ Error: ' + e, 'error'));
+        .catch(e => showMsg(msg, '❌ Error: ' + formatClientError(e), 'error'));
     }
 
     function buildRegStudents() {
       const tbody = document.getElementById('reg-students');
       const msg = document.getElementById('reg-students-msg');
       if (!tbody) return;
-      fetch('/api/students')
-        .then(r => r.json())
-        .then(data => {
-          if (!data.success || data.students.length === 0) {
+      fetchJson('/api/students')
+        .then(({ ok, data }) => {
+          if (!ok || !data.success || data.students.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text3);text-align:center;padding:16px">No students registered yet</td></tr>';
             if (msg) msg.style.display = 'none';
             return;
@@ -5254,7 +5398,7 @@
         })
         .catch(err => {
           tbody.innerHTML = '<tr><td colspan="6" style="color:var(--danger);text-align:center;padding:16px">Unable to load registered students.</td></tr>';
-          if (msg) showMsg(msg, '❌ Error: ' + err, 'error');
+          if (msg) showMsg(msg, '❌ Error: ' + formatClientError(err), 'error');
         });
     }
 
@@ -5305,7 +5449,7 @@
           buildAttTable();
           buildManualList();
         })
-        .catch(err => showMsg(msg, '❌ Error: ' + err, 'error'));
+        .catch(err => showMsg(msg, '❌ Error: ' + formatClientError(err), 'error'));
     }
 
     /* ═══════════════════════════════════════════════
@@ -5336,7 +5480,7 @@
 
     function loadAdminDataFromDB() {
       // Load students from the database
-      fetch('/api/students').then(r => r.json()).then(data => {
+      fetchJson('/api/students').then(({ data }) => {
         const sc = data.success ? data.students.length : 0;
         document.getElementById('a-stat-students').textContent = sc;
         const sb = document.getElementById('a-students-body');
@@ -5411,7 +5555,7 @@
           buildManualList();
           buildRegStudents();
         })
-        .catch(e => showMsg(msg, '❌ Error: ' + e, 'error'));
+        .catch(e => showMsg(msg, '❌ Error: ' + formatClientError(e), 'error'));
     }
 
     /* ═══════════════════════════════════════════════
@@ -5477,7 +5621,7 @@
             showMsg(err, '❌ ' + data.message, 'error');
           }
         })
-        .catch(e => showMsg(err, '❌ Error: ' + e, 'error'));
+        .catch(e => showMsg(err, '❌ Error: ' + formatClientError(e), 'error'));
     }
 
     function copyRevealedKey() {
@@ -5530,7 +5674,7 @@
             ok.style.display = 'none';
           }
         })
-        .catch(e => showMsg(err, '❌ Error: ' + e, 'error'));
+        .catch(e => showMsg(err, '❌ Error: ' + formatClientError(e), 'error'));
     }
 
     /* ═══════════════════════════════════════════════
@@ -5574,7 +5718,7 @@
             ok.style.display = 'none';
           }
         })
-        .catch(e => showMsg(err, '❌ Error: ' + e, 'error'));
+        .catch(e => showMsg(err, '❌ Error: ' + formatClientError(e), 'error'));
     }
 
     /* ═══════════════════════════════════════════════
@@ -5747,10 +5891,12 @@
       const url = dateFilter
         ? `/api/attendance_report?date=${encodeURIComponent(dateFilter)}`
         : '/api/attendance_report';
-      fetch(url)
-        .then(r => r.json())
-        .then(data => {
-          if (!data.success) return;
+      fetchJson(url)
+        .then(({ ok, data }) => {
+          if (!ok || !data.success) {
+            tbody.innerHTML = '<tr><td colspan="7" style="color:var(--danger);text-align:center;padding:20px">Unable to load attendance report right now.</td></tr>';
+            return;
+          }
           const students = data.report;
 
           // Update dashboard stats after loading the report
@@ -5778,6 +5924,9 @@
         </tr>`;
           }).join('') || '<tr><td colspan="7" style="color:var(--text3);text-align:center;padding:20px">No students registered yet</td></tr>';
           filterTable();
+        })
+        .catch(error => {
+          tbody.innerHTML = `<tr><td colspan="7" style="color:var(--danger);text-align:center;padding:20px">${formatClientError(error)}</td></tr>`;
         });
     }
 
@@ -5832,39 +5981,40 @@
       addLog('blue', 'Camera stopped');
     }
 
-    function captureAndRecognize() {
+    async function captureAndRecognize() {
       const video = document.getElementById('classroom-video');
-      const canvas = document.getElementById('snap-canvas');
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 360;
-      canvas.getContext('2d').drawImage(video, 0, 0);
+      const msg = document.getElementById('cam-msg');
+      if (!video || !video.srcObject) {
+        showMsg(msg, '⚠️ Start the camera first, then capture attendance.', 'error');
+        return;
+      }
       stopCamera();
       document.getElementById('cam-status-label').textContent = '🧠 AI Processing...';
-      showMsg(document.getElementById('cam-msg'), '⏳ AI face recognition is running — please wait...', 'info');
-      canvas.toBlob(blob => {
+      showMsg(msg, '⏳ AI face recognition is running — please wait...', 'info');
+      try {
+        const blob = await captureVideoFrameBlob(video, 1280, 0.82);
         const date = document.getElementById('cam-date').value || new Date().toISOString().slice(0, 10);
         const formData = new FormData();
         formData.append('photo', blob, 'class_photo.jpg');
         formData.append('date', date);
         formData.append('marked_by', 'teacher');
-        formData.append('attendance_mode', 'upload');
+        formData.append('attendance_mode', 'camera');
         formData.append('subject', document.getElementById('cam-subject').value || 'N/A');
-        fetch('/api/take_attendance', { method: 'POST', body: formData })
-          .then(r => r.json())
-          .then(data => {
-            document.getElementById('cam-status-label').textContent = '✅ Done';
-            if (data.success) {
-              showAIResults(data);
-              document.getElementById('cam-msg').style.display = 'none';
-            } else {
-              showMsg(document.getElementById('cam-msg'), '❌ ' + data.message, 'error');
-            }
-          })
-          .catch(e => {
-            document.getElementById('cam-status-label').textContent = '❌ Error';
-            showMsg(document.getElementById('cam-msg'), '❌ Error: ' + e, 'error');
-          });
-      }, 'image/jpeg', 1.0);
+        const { ok, data } = await fetchJson('/api/take_attendance', { method: 'POST', body: formData });
+        document.getElementById('cam-status-label').textContent = ok && data.success ? '✅ Done' : '❌ Error';
+        if (ok && data.success) {
+          showAIResults(data);
+          msg.style.display = 'none';
+        } else {
+          showMsg(msg, '❌ ' + (data.message || 'Unable to process AI attendance right now.'), 'error');
+          if ((data.message || '').toLowerCase().includes('unavailable')) {
+            warmFaceRecognitionRuntime({ force: true });
+          }
+        }
+      } catch (e) {
+        document.getElementById('cam-status-label').textContent = '❌ Error';
+        showMsg(msg, '❌ Error: ' + formatClientError(e), 'error');
+      }
     }
     function previewAttPhoto(e) {
       const preview = document.getElementById('att-photo-preview');
@@ -5881,7 +6031,7 @@
       reader.readAsDataURL(file);
     }
 
-    function uploadAndRecognize() {
+    async function uploadAndRecognize() {
       const fileInput = document.getElementById('att-photo-input');
       const msg = document.getElementById('upload-att-msg');
       const date = document.getElementById('upload-att-date').value || new Date().toISOString().slice(0, 10);
@@ -5889,23 +6039,27 @@
         showMsg(msg, '⚠️ Please select a class photo first!', 'error'); return;
       }
       showMsg(msg, '⏳ AI processing is running — please wait...', 'info');
-      const formData = new FormData();
-      formData.append('photo', fileInput.files[0]);
-      formData.append('date', date);
-      formData.append('marked_by', 'teacher');
-      formData.append('attendance_mode', 'upload');
-      formData.append('subject', document.getElementById('upload-subject').value || 'N/A');
-      fetch('/api/take_attendance', { method: 'POST', body: formData })
-        .then(r => r.json())
-        .then(data => {
-          if (data.success) {
-            showAIResults(data);
-            showMsg(msg, `✅ Done! ${data.present_count} Present · ${data.absent_count} Absent · ${data.unknown_count} Unknown · ${data.detector_used || 'AI'} detector`, 'success');
-          } else {
-            showMsg(msg, '❌ ' + data.message, 'error');
+      try {
+        const optimizedBlob = await imageFileToBlob(fileInput.files[0], 1600, 0.86);
+        const formData = new FormData();
+        formData.append('photo', optimizedBlob, 'class_photo.jpg');
+        formData.append('date', date);
+        formData.append('marked_by', 'teacher');
+        formData.append('attendance_mode', 'upload');
+        formData.append('subject', document.getElementById('upload-subject').value || 'N/A');
+        const { ok, data } = await fetchJson('/api/take_attendance', { method: 'POST', body: formData });
+        if (ok && data.success) {
+          showAIResults(data);
+          showMsg(msg, `✅ Done! ${data.present_count} Present · ${data.absent_count} Absent · ${data.unknown_count} Unknown · ${data.detector_used || 'AI'} detector`, 'success');
+        } else {
+          showMsg(msg, '❌ ' + (data.message || 'Unable to process uploaded attendance right now.'), 'error');
+          if ((data.message || '').toLowerCase().includes('unavailable')) {
+            warmFaceRecognitionRuntime({ force: true });
           }
-        })
-        .catch(e => showMsg(msg, '❌ Error: ' + e, 'error'));
+        }
+      } catch (e) {
+        showMsg(msg, '❌ Error: ' + formatClientError(e), 'error');
+      }
     }
 
     function showAIResults(data) {
@@ -5997,10 +6151,9 @@
       manualStatus = {};
       const el = document.getElementById('manual-att-list');
       if (!el) return;
-      fetch('/api/students')
-        .then(r => r.json())
-        .then(data => {
-          if (!data.success || data.students.length === 0) {
+      fetchJson('/api/students')
+        .then(({ ok, data }) => {
+          if (!ok || !data.success || data.students.length === 0) {
             el.innerHTML = '<p style="padding:16px;font-size:12px;color:var(--text3)">No students registered yet.</p>';
             return;
           }
@@ -6019,15 +6172,17 @@
         </div>
         <span id="status-label-${s.roll}" style="font-size:11px;font-weight:700;min-width:30px;color:var(--text3)">—</span>
       </div>`).join('');
+        })
+        .catch(error => {
+          el.innerHTML = `<p style="padding:16px;font-size:12px;color:var(--danger)">${formatClientError(error)}</p>`;
         });
     }
     function buildRegStudents() {
       const tbody = document.getElementById('reg-students');
       if (!tbody) return;
-      fetch('/api/students')
-        .then(r => r.json())
-        .then(data => {
-          if (!data.success || data.students.length === 0) {
+      fetchJson('/api/students')
+        .then(({ ok, data }) => {
+          if (!ok || !data.success || data.students.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text3);text-align:center;padding:16px">No students registered yet</td></tr>';
             return;
           }
@@ -6049,10 +6204,9 @@
       const tbody = document.getElementById('reg-students');
       const msg = document.getElementById('reg-students-msg');
       if (!tbody) return;
-      fetch('/api/students')
-        .then(r => r.json())
-        .then(data => {
-          if (!data.success || data.students.length === 0) {
+      fetchJson('/api/students')
+        .then(({ ok, data }) => {
+          if (!ok || !data.success || data.students.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text3);text-align:center;padding:16px">No students registered yet</td></tr>';
             if (msg) msg.style.display = 'none';
             return;
@@ -6082,7 +6236,7 @@
         })
         .catch(err => {
           tbody.innerHTML = '<tr><td colspan="6" style="color:var(--danger);text-align:center;padding:16px">Unable to load registered students.</td></tr>';
-          if (msg) showMsg(msg, '❌ Error: ' + err, 'error');
+          if (msg) showMsg(msg, '❌ Error: ' + formatClientError(err), 'error');
         });
     }
 
@@ -6101,7 +6255,7 @@
       });
     }
 
-    function savePhotos() {
+    async function savePhotos() {
       const name = document.getElementById('p-name').value.trim();
       const roll = document.getElementById('p-roll').value.trim();
       const ok = document.getElementById('photo-ok');
@@ -6114,20 +6268,23 @@
       const formData = new FormData();
       formData.append('name', name);
       formData.append('roll', roll);
-      for (let i = 0; i < files.length; i++) formData.append('photos', files[i]);
-      fetch('/api/upload_photos', { method: 'POST', body: formData })
-        .then(r => r.json())
-        .then(data => {
-          if (data.success) {
-            showMsg(ok, `✅ ${data.message}`, 'success');
-            addLog('blue', `Face photos uploaded: ${name} — ${files.length} photos`);
-            buildRegStudents();
-          } else {
-            showMsg(err, '❌ ' + data.message, 'error');
-            ok.style.display = 'none';
-          }
-        })
-        .catch(e => showMsg(err, '❌ Upload failed: ' + e, 'error'));
+      try {
+        const optimizedFiles = await Promise.all(
+          Array.from(files).map(file => imageFileToBlob(file, 960, 0.88).catch(() => file))
+        );
+        optimizedFiles.forEach((file, index) => formData.append('photos', file, `student_${index + 1}.jpg`));
+        const { ok: responseOk, data } = await fetchJson('/api/upload_photos', { method: 'POST', body: formData });
+        if (responseOk && data.success) {
+          showMsg(ok, `✅ ${data.message}`, 'success');
+          addLog('blue', `Face photos uploaded: ${name} — ${files.length} photos`);
+          buildRegStudents();
+        } else {
+          showMsg(err, '❌ ' + data.message, 'error');
+          ok.style.display = 'none';
+        }
+      } catch (e) {
+        showMsg(err, '❌ Upload failed: ' + formatClientError(e), 'error');
+      }
     }
 
     function clearPhotos() {
@@ -6152,7 +6309,7 @@
     /* ═══════════════════════════════════════════════
        STUDENT ANGLE PHOTO GRID
     ═══════════════════════════════════════════════ */
-    function saveStudentPhotos() {
+    async function saveStudentPhotos() {
       const name = document.getElementById('s-upload-name').value.trim();
       const roll = document.getElementById('s-upload-roll').value.trim();
       const ok = document.getElementById('s-photo-ok');
@@ -6165,21 +6322,24 @@
       formData.append('name', name);
       formData.append('roll', roll);
       formData.append('uploaded_by', 'student');
-      for (let i = 0; i < files.length; i++) formData.append('photos', files[i]);
-      fetch('/api/upload_photos', { method: 'POST', body: formData })
-        .then(r => r.json())
-        .then(data => {
-          if (data.success) {
-            showMsg(ok, `✅ ${data.message}`, 'success');
-            setTimeout(() => setStudentPhotoUploadState(true), 900);
-          } else {
-            showMsg(ok, '❌ ' + data.message, 'error');
-            if (data.has_uploaded_photos) {
-              setTimeout(() => setStudentPhotoUploadState(true), 1200);
-            }
+      try {
+        const optimizedFiles = await Promise.all(
+          Array.from(files).map(file => imageFileToBlob(file, 960, 0.88).catch(() => file))
+        );
+        optimizedFiles.forEach((file, index) => formData.append('photos', file, `student_${index + 1}.jpg`));
+        const { ok: responseOk, data } = await fetchJson('/api/upload_photos', { method: 'POST', body: formData });
+        if (responseOk && data.success) {
+          showMsg(ok, `✅ ${data.message}`, 'success');
+          setTimeout(() => setStudentPhotoUploadState(true), 900);
+        } else {
+          showMsg(ok, '❌ ' + data.message, 'error');
+          if (data.has_uploaded_photos) {
+            setTimeout(() => setStudentPhotoUploadState(true), 1200);
           }
-        })
-        .catch(e => showMsg(ok, '❌ Error: ' + e, 'error'));
+        }
+      } catch (e) {
+        showMsg(ok, '❌ Error: ' + formatClientError(e), 'error');
+      }
     }
     const ANGLES = ['Front', 'Left', 'Right', 'Up-Tilt'];
     function buildAngleGrid() {
@@ -6223,14 +6383,13 @@
 
       const details = rolls.map(roll => ({ roll, status: manualStatus[roll] }));
 
-      fetch('/api/save_manual_attendance', {
+      fetchJson('/api/save_manual_attendance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date, subject, type, remarks, details })
       })
-        .then(r => r.json())
-        .then(data => {
-          if (data.success) {
+        .then(({ ok, data }) => {
+          if (ok && data.success) {
             showMsg(ok, `✅ Saved! ${data.present} Present · ${data.absent} Absent — ${date} · ${subject}`, 'success');
             err.style.display = 'none';
             addLog('green', `Manual attendance: ${date} · ${subject}`);
@@ -6239,7 +6398,7 @@
             showMsg(err, '❌ ' + data.message, 'error');
           }
         })
-        .catch(e => showMsg(err, '❌ Error: ' + e, 'error'));
+        .catch(e => showMsg(err, '❌ Error: ' + formatClientError(e), 'error'));
     }
     function setAttStatus(roll, status, btn) {
       manualStatus[roll] = status;
@@ -6315,7 +6474,7 @@
           showMsg(msg, '✅ ' + data.message + ' Temporary password: ' + data.temporary_password, 'success');
           addLog('yellow', `Temporary password issued for ${role}: ${name} (${identifier})`);
         })
-        .catch(e => showMsg(msg, '❌ Error: ' + e, 'error'));
+        .catch(e => showMsg(msg, '❌ Error: ' + formatClientError(e), 'error'));
     }
 
     function updateForgotRecoveryUI() {
@@ -6449,10 +6608,9 @@
       const tbody = document.getElementById('reg-students');
       const msg = document.getElementById('reg-students-msg');
       if (!tbody) return;
-      fetch('/api/students')
-        .then(r => r.json())
-        .then(data => {
-          if (!data.success || data.students.length === 0) {
+      fetchJson('/api/students')
+        .then(({ ok, data }) => {
+          if (!ok || !data.success || data.students.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text3);text-align:center;padding:16px">No students registered yet</td></tr>';
             if (msg) msg.style.display = 'none';
             return;
@@ -6490,7 +6648,7 @@
         })
         .catch(err => {
           tbody.innerHTML = '<tr><td colspan="6" style="color:var(--danger);text-align:center;padding:16px">Unable to load registered students.</td></tr>';
-          if (msg) showMsg(msg, '❌ Error: ' + err, 'error');
+          if (msg) showMsg(msg, '❌ Error: ' + formatClientError(err), 'error');
         });
     }
 
@@ -6533,7 +6691,7 @@
           showMsg(msg, '✅ ' + data.message + ' Temporary password: ' + data.temporary_password, 'success');
           addLog('yellow', `Teacher issued temporary password for student: ${name} (${roll})`);
         })
-        .catch(e => showMsg(msg, '❌ Error: ' + e, 'error'));
+        .catch(e => showMsg(msg, '❌ Error: ' + formatClientError(e), 'error'));
     }
 
     function updateMyEmail(role) {
@@ -6582,7 +6740,7 @@
           showMsg(msg, '✅ ' + data.message, 'success');
           addLog('blue', `${isTeacher ? 'Teacher' : 'Student'} email updated to ${data.email || normalizedEmail}`);
         })
-        .catch(e => showMsg(msg, '❌ Error: ' + e, 'error'));
+        .catch(e => showMsg(msg, '❌ Error: ' + formatClientError(e), 'error'));
     }
 
     function attachAdminResetButtons() {

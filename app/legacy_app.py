@@ -288,26 +288,26 @@ def load_face_runtime():
 
     try:
         deepface_candidates = (
-            ("deepface.DeepFace", "DeepFace"),
+            ("deepface.DeepFace", None),
             ("deepface", "DeepFace"),
         )
         deepface_import_errors = []
-        deepface_class = None
+        deepface_api = None
 
         for module_name, attribute_name in deepface_candidates:
             try:
                 module = importlib.import_module(module_name)
-                deepface_class = getattr(module, attribute_name)
+                deepface_api = module if attribute_name is None else getattr(module, attribute_name)
                 break
             except Exception as candidate_exc:
                 deepface_import_errors.append(
-                    f"{module_name}.{attribute_name}: {candidate_exc}"
+                    f"{module_name}{'.' + attribute_name if attribute_name else ''}: {candidate_exc}"
                 )
 
-        if deepface_class is None:
+        if deepface_api is None:
             raise AttributeError("; ".join(deepface_import_errors))
 
-        DeepFace = deepface_class
+        DeepFace = deepface_api
         verification = importlib.import_module("deepface.modules.verification")
         MATCH_DISTANCE_THRESHOLD = resolve_face_distance_threshold()
         FACE_RUNTIME_ERROR = None
@@ -2074,6 +2074,58 @@ def take_attendance():
             "attendance_mode": attendance_mode,
             "face_debug": face_debug,
             "date": date,
+        }
+    )
+
+
+@app.route("/api/ai/runtime_status", methods=["GET"])
+def ai_runtime_status():
+    warm = request.args.get("warm", "0").strip() == "1"
+    runtime_ready = False
+    cache_ready = bool(known_faces)
+    message = "AI runtime has not been warmed yet."
+
+    if warm:
+        try:
+            ensure_face_runtime_ready()
+            runtime_ready = True
+            if not known_faces:
+                load_known_faces()
+            cache_ready = bool(known_faces)
+            message = (
+                "AI runtime is ready."
+                if cache_ready
+                else "AI runtime is ready, but no registered face photos were found yet."
+            )
+        except RuntimeError as exc:
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "ready": False,
+                        "cache_ready": False,
+                        "known_faces_count": 0,
+                        "message": str(exc),
+                    }
+                ),
+                503,
+            )
+    else:
+        runtime_ready = FACE_RUNTIME_LOADED and DeepFace is not None
+        if runtime_ready:
+            message = (
+                "AI runtime is ready."
+                if cache_ready
+                else "AI runtime is ready, but face cache is still empty."
+            )
+
+    return jsonify(
+        {
+            "success": True,
+            "ready": runtime_ready,
+            "cache_ready": cache_ready,
+            "known_faces_count": len(known_faces),
+            "message": message,
         }
     )
 
