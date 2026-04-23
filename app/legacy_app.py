@@ -281,14 +281,35 @@ def normalize_role(value):
 
 
 def load_face_runtime():
-    global DeepFace, verification, FACE_RUNTIME_ERROR, FACE_RUNTIME_LOADED
+    global DeepFace, verification, FACE_RUNTIME_ERROR, FACE_RUNTIME_LOADED, MATCH_DISTANCE_THRESHOLD
 
     if FACE_RUNTIME_LOADED:
         return DeepFace, verification
 
     try:
-        DeepFace = importlib.import_module("deepface").DeepFace
+        deepface_candidates = (
+            ("deepface.DeepFace", "DeepFace"),
+            ("deepface", "DeepFace"),
+        )
+        deepface_import_errors = []
+        deepface_class = None
+
+        for module_name, attribute_name in deepface_candidates:
+            try:
+                module = importlib.import_module(module_name)
+                deepface_class = getattr(module, attribute_name)
+                break
+            except Exception as candidate_exc:
+                deepface_import_errors.append(
+                    f"{module_name}.{attribute_name}: {candidate_exc}"
+                )
+
+        if deepface_class is None:
+            raise AttributeError("; ".join(deepface_import_errors))
+
+        DeepFace = deepface_class
         verification = importlib.import_module("deepface.modules.verification")
+        MATCH_DISTANCE_THRESHOLD = resolve_face_distance_threshold()
         FACE_RUNTIME_ERROR = None
         FACE_RUNTIME_LOADED = True
         logger.info("DeepFace runtime loaded on demand.")
