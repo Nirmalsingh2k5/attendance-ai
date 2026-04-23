@@ -3433,6 +3433,667 @@
         padding: 24px 18px
       }
     }
+
+    .landing-shell-v2 {
+      display: grid;
+      gap: 20px
+    }
+
+    .landing-shell-v2>.landing-hero,
+    .landing-shell-v2>.landing-grid {
+      display: none
+    }
+
+    .landing-shell-v2 section,
+    .landing-shell-v2 .landing-nav {
+      scroll-margin-top: 24px
+    }
+
+    .landing-v2-nav {
+      position: sticky;
+      top: 18px;
+      z-index: 8;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 18px;
+      align-items: center;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px)
+    }
+
+    .landing-v2-links {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap
+    }
+
+    .landing-v2-nav-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 0 16px;
+      border-radius: 999px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text2);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: transform .22s ease, background .22s ease, color .22s ease, border-color .22s ease
+    }
+
+    .landing-v2-nav-link:hover {
+      transform: translateY(-1px);
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--border2)
+    }
+
+    .landing-v2-hero {
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(340px, .9fr);
+      gap: 22px;
+      padding: 34px
+    }
+
+    .landing-v2-hero::before,
+    .landing-v2-hero::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none
+    }
+
+    .landing-v2-hero::before {
+      width: 360px;
+      height: 360px;
+      right: -120px;
+      top: -140px;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.22), transparent 70%)
+    }
+
+    .landing-v2-hero::after {
+      width: 320px;
+      height: 320px;
+      left: -100px;
+      bottom: -140px;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.18), transparent 72%)
+    }
+
+    .landing-v2-copy,
+    .landing-v2-aside {
+      position: relative;
+      z-index: 1
+    }
+
+    .landing-v2-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(125, 211, 252, 0.2);
+      background: rgba(56, 189, 248, 0.12);
+      color: #dbeafe;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase
+    }
+
+    .landing-v2-chip.alt {
+      border-color: rgba(167, 139, 250, 0.18);
+      background: rgba(167, 139, 250, 0.1);
+      color: #e9d5ff
+    }
+
+    [data-theme="light"] .landing-v2-chip {
+      color: #1d4ed8
+    }
+
+    [data-theme="light"] .landing-v2-chip.alt {
+      color: #7c3aed
+    }
+
+    .landing-v2-copy h2 {
+      margin-top: 18px;
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(42px, 6vw, 84px);
+      line-height: .96;
+      letter-spacing: -.06em;
+      color: var(--text);
+      max-width: 10ch;
+      text-wrap: balance
+    }
+
+    .landing-v2-copy p {
+      max-width: 62ch;
+      margin-top: 18px;
+      font-size: 15px;
+      line-height: 1.85;
+      color: var(--text2)
+    }
+
+    .landing-v2-copy .landing-actions {
+      margin-top: 26px
+    }
+
+    .landing-v2-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 26px
+    }
+
+    .landing-v2-stat,
+    .landing-v2-mini-card,
+    .landing-v2-kpi,
+    .landing-v2-feature-card,
+    .landing-v2-story,
+    .landing-v2-step-card,
+    .landing-v2-role-card,
+    .landing-v2-proof-card,
+    .landing-v2-cta-block {
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.06)
+    }
+
+    .landing-v2-stat {
+      padding: 18px 18px 16px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03))
+    }
+
+    .landing-v2-stat strong {
+      display: block;
+      font-family: 'Syne', sans-serif;
+      font-size: 22px;
+      line-height: 1.05;
+      color: var(--text)
+    }
+
+    .landing-v2-stat span {
+      display: block;
+      margin-top: 8px;
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--text3)
+    }
+
+    .landing-v2-aside {
+      display: grid;
+      gap: 14px;
+      align-content: start
+    }
+
+    .landing-v2-spotlight {
+      padding: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 28px;
+      background: linear-gradient(160deg, rgba(15, 23, 42, 0.3), rgba(37, 99, 235, 0.12))
+    }
+
+    .landing-v2-spotlight h3,
+    .landing-v2-section-head h3,
+    .landing-v2-story h3,
+    .landing-v2-feature-card h3,
+    .landing-v2-step-card h3,
+    .landing-v2-role-card h3,
+    .landing-v2-proof-card h3,
+    .landing-v2-cta-copy h3 {
+      color: var(--text);
+      font-family: 'Syne', sans-serif
+    }
+
+    .landing-v2-spotlight h3 {
+      margin-top: 16px;
+      font-size: clamp(24px, 3.4vw, 36px);
+      line-height: 1.04;
+      max-width: 12ch
+    }
+
+    .landing-v2-spotlight p {
+      margin-top: 12px;
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--text2)
+    }
+
+    .landing-v2-mini-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px
+    }
+
+    .landing-v2-mini-card {
+      padding: 16px 16px 14px
+    }
+
+    .landing-v2-mini-card small,
+    .landing-v2-kpi small,
+    .landing-v2-feature-tag,
+    .landing-v2-role-label,
+    .landing-v2-proof-stat small,
+    .landing-v2-section-head p {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--text3)
+    }
+
+    .landing-v2-mini-card strong,
+    .landing-v2-kpi strong,
+    .landing-v2-proof-stat strong {
+      display: block;
+      margin-top: 10px;
+      font-family: 'Syne', sans-serif;
+      font-size: 19px;
+      line-height: 1.08;
+      color: var(--text)
+    }
+
+    .landing-v2-kpi-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px
+    }
+
+    .landing-v2-kpi {
+      padding: 16px;
+      text-align: center
+    }
+
+    .landing-v2-strip {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      overflow: auto;
+      padding: 18px 22px;
+      border-radius: 22px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.05);
+      white-space: nowrap;
+      scrollbar-width: none
+    }
+
+    .landing-v2-strip::-webkit-scrollbar {
+      display: none
+    }
+
+    .landing-v2-strip span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 38px;
+      padding: 0 16px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text2)
+    }
+
+    .landing-v2-strip b {
+      color: var(--text3);
+      font-size: 12px
+    }
+
+    .landing-v2-section {
+      display: grid;
+      gap: 18px
+    }
+
+    .landing-v2-section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, .62fr);
+      gap: 18px;
+      align-items: end
+    }
+
+    .landing-v2-section-head h3 {
+      margin-top: 14px;
+      font-size: clamp(30px, 4vw, 48px);
+      line-height: .98;
+      letter-spacing: -.05em;
+      max-width: 13ch
+    }
+
+    .landing-v2-section-head p {
+      margin: 0;
+      justify-self: end;
+      max-width: 36ch;
+      line-height: 1.8
+    }
+
+    .landing-v2-feature-grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 16px
+    }
+
+    .landing-v2-feature-card {
+      grid-column: span 4;
+      padding: 24px
+    }
+
+    .landing-v2-feature-card.is-wide {
+      grid-column: span 8;
+      min-height: 260px;
+      background:
+        linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(255, 255, 255, 0.04)),
+        rgba(255, 255, 255, 0.05)
+    }
+
+    .landing-v2-feature-card h3 {
+      margin-top: 14px;
+      font-size: clamp(24px, 3.4vw, 38px);
+      line-height: 1.04;
+      max-width: 14ch
+    }
+
+    .landing-v2-feature-card p,
+    .landing-v2-story p,
+    .landing-v2-step-card p,
+    .landing-v2-role-card p,
+    .landing-v2-proof-card p,
+    .landing-v2-cta-copy p {
+      margin-top: 12px;
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--text2)
+    }
+
+    .landing-v2-section-split {
+      grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr);
+      align-items: start
+    }
+
+    .landing-v2-story {
+      padding: 26px
+    }
+
+    .landing-v2-story-points {
+      display: grid;
+      gap: 12px;
+      margin-top: 20px
+    }
+
+    .landing-v2-story-point {
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text2);
+      line-height: 1.7
+    }
+
+    .landing-v2-step-stack {
+      display: grid;
+      gap: 14px
+    }
+
+    .landing-v2-step-card {
+      display: grid;
+      grid-template-columns: 62px 1fr;
+      gap: 16px;
+      padding: 22px
+    }
+
+    .landing-v2-step-no,
+    .landing-v2-role-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -.03em
+    }
+
+    .landing-v2-step-card h3,
+    .landing-v2-role-card h3 {
+      font-size: 24px;
+      line-height: 1.06
+    }
+
+    .landing-v2-role-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px
+    }
+
+    .landing-v2-role-card {
+      padding: 24px
+    }
+
+    .landing-v2-role-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px
+    }
+
+    .landing-v2-role-badge {
+      font-size: 15px
+    }
+
+    .landing-v2-proof-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr);
+      gap: 16px
+    }
+
+    .landing-v2-proof-card {
+      padding: 28px
+    }
+
+    .landing-v2-proof-note {
+      margin-top: 18px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text2);
+      line-height: 1.75
+    }
+
+    .landing-v2-proof-stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px
+    }
+
+    .landing-v2-proof-stat {
+      padding: 24px;
+      border-radius: 24px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.06)
+    }
+
+    .landing-v2-cta-block {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 20px;
+      align-items: center;
+      padding: 30px;
+      background: linear-gradient(140deg, rgba(15, 23, 42, 0.22), rgba(15, 118, 110, 0.14))
+    }
+
+    .landing-v2-cta-copy h3 {
+      font-size: clamp(30px, 4.4vw, 52px);
+      line-height: .98;
+      letter-spacing: -.05em;
+      max-width: 14ch
+    }
+
+    .landing-v2-cta-block .landing-actions {
+      justify-content: flex-end
+    }
+
+    @media(max-width:1080px) {
+
+      .landing-v2-nav {
+        grid-template-columns: 1fr;
+        justify-items: stretch
+      }
+
+      .landing-v2-links {
+        justify-content: flex-start
+      }
+
+      .landing-v2-hero,
+      .landing-v2-section-split,
+      .landing-v2-proof-grid,
+      .landing-v2-cta-block {
+        grid-template-columns: 1fr
+      }
+
+      .landing-v2-feature-card,
+      .landing-v2-feature-card.is-wide {
+        grid-column: span 6
+      }
+
+      .landing-v2-role-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr))
+      }
+
+      .landing-v2-cta-block .landing-actions {
+        justify-content: flex-start
+      }
+    }
+
+    @media(max-width:760px) {
+
+      .landing-v2-nav {
+        position: relative;
+        top: 0;
+        padding: 18px
+      }
+
+      .landing-v2-links {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%
+      }
+
+      .landing-v2-nav-link {
+        width: 100%
+      }
+
+      .landing-v2-hero,
+      .landing-v2-spotlight,
+      .landing-v2-story,
+      .landing-v2-proof-card,
+      .landing-v2-cta-block {
+        padding: 22px
+      }
+
+      .landing-v2-copy h2 {
+        font-size: clamp(34px, 11vw, 56px);
+        max-width: 100%
+      }
+
+      .landing-v2-copy p {
+        max-width: 100%
+      }
+
+      .landing-v2-stat-grid,
+      .landing-v2-mini-grid,
+      .landing-v2-kpi-row,
+      .landing-v2-proof-stats,
+      .landing-v2-role-grid {
+        grid-template-columns: 1fr
+      }
+
+      .landing-v2-section-head,
+      .landing-v2-feature-grid {
+        grid-template-columns: 1fr
+      }
+
+      .landing-v2-section-head p {
+        justify-self: start;
+        max-width: 100%
+      }
+
+      .landing-v2-feature-card,
+      .landing-v2-feature-card.is-wide {
+        grid-column: auto;
+        min-height: 0
+      }
+
+      .landing-v2-step-card {
+        grid-template-columns: 54px 1fr;
+        padding: 18px
+      }
+
+      .landing-v2-step-card h3,
+      .landing-v2-role-card h3 {
+        font-size: 21px
+      }
+
+      .landing-v2-cta-block .landing-actions,
+      .landing-v2-cta-block .btn-primary,
+      .landing-v2-cta-block .btn-secondary {
+        width: 100%
+      }
+    }
+
+    @media(max-width:420px) {
+
+      .landing-v2-nav {
+        padding: 16px
+      }
+
+      .landing-v2-copy h2 {
+        font-size: clamp(30px, 10vw, 42px)
+      }
+
+      .landing-v2-copy p,
+      .landing-v2-feature-card p,
+      .landing-v2-story p,
+      .landing-v2-step-card p,
+      .landing-v2-role-card p,
+      .landing-v2-proof-card p,
+      .landing-v2-cta-copy p {
+        font-size: 13px;
+        line-height: 1.72
+      }
+
+      .landing-v2-links {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px
+      }
+
+      .landing-v2-step-card {
+        grid-template-columns: 1fr;
+        gap: 14px
+      }
+
+      .landing-v2-step-no,
+      .landing-v2-role-badge {
+        width: 48px;
+        height: 48px;
+        border-radius: 15px
+      }
+    }
   </style>
 </head>
 
@@ -3544,8 +4205,8 @@
      PAGE: LANDING HOME
 ════════════════════════════════════════ -->
   <div class="page col-page landing-page" id="pg-home">
-    <div class="landing-shell">
-      <div class="landing-nav glass-card">
+    <div class="landing-shell landing-shell-v2">
+      <div class="landing-nav glass-card landing-v2-nav">
         <div class="landing-brand">
           <div class="seal-mini">🎓</div>
           <div>
@@ -3553,11 +4214,262 @@
             <p>Official Campus Access</p>
           </div>
         </div>
+        <div class="landing-v2-links">
+          <a class="landing-v2-nav-link" href="#home-overview">Overview</a>
+          <a class="landing-v2-nav-link" href="#home-platform">Platform</a>
+          <a class="landing-v2-nav-link" href="#home-workflow">Workflow</a>
+          <a class="landing-v2-nav-link" href="#home-access">Access</a>
+        </div>
         <div class="landing-nav-actions">
           <button class="btn-secondary" onclick="goTo('pg-reg-student')">Student Registration</button>
           <button class="btn-primary" onclick="goTo('pg-login')">Open Portal</button>
         </div>
       </div>
+
+      <section class="landing-v2-hero glass-card" id="home-overview">
+        <div class="landing-v2-copy">
+          <div class="landing-v2-chip">AI Attendance for DSEU</div>
+          <h2>Campus attendance that feels premium from the first click.</h2>
+          <p>Face recognition, manual backup, student records, and role-based access now live inside one cleaner portal built for classrooms, labs, and daily attendance review. The entry experience looks sharper, and the real work still stays one tap away.</p>
+          <div class="landing-actions">
+            <button class="btn-primary" onclick="goTo('pg-login')">Open Secure Portal</button>
+            <button class="btn-secondary" onclick="goTo('pg-reg-teacher')">Register Teacher</button>
+          </div>
+          <div class="landing-v2-stat-grid">
+            <div class="landing-v2-stat">
+              <strong>AI Capture</strong>
+              <span>Use live camera or upload a classroom photo to mark attendance fast.</span>
+            </div>
+            <div class="landing-v2-stat">
+              <strong>Fallback Ready</strong>
+              <span>Manual attendance, records, and review flows stay available when needed.</span>
+            </div>
+            <div class="landing-v2-stat">
+              <strong>Phone + Laptop</strong>
+              <span>The landing screen stacks cleanly so teachers can still use it on mobile.</span>
+            </div>
+          </div>
+        </div>
+        <div class="landing-v2-aside">
+          <div class="landing-v2-spotlight">
+            <span class="landing-v2-chip alt">Portal Snapshot</span>
+            <h3>Public entry outside, secure workflows inside.</h3>
+            <p>Visitors land on a polished front page first, then move into teacher, student, or admin workflows without confusion. It feels like a real product page instead of a plain login gate.</p>
+            <div class="landing-v2-mini-grid">
+              <div class="landing-v2-mini-card">
+                <small>Teacher</small>
+                <strong>Take attendance</strong>
+              </div>
+              <div class="landing-v2-mini-card">
+                <small>Student</small>
+                <strong>Track records</strong>
+              </div>
+              <div class="landing-v2-mini-card">
+                <small>Admin</small>
+                <strong>Control access</strong>
+              </div>
+              <div class="landing-v2-mini-card">
+                <small>System</small>
+                <strong>Stay responsive</strong>
+              </div>
+            </div>
+          </div>
+          <div class="landing-v2-kpi-row">
+            <div class="landing-v2-kpi">
+              <small>Flow</small>
+              <strong>Front page</strong>
+            </div>
+            <div class="landing-v2-kpi">
+              <small>Access</small>
+              <strong>Role based</strong>
+            </div>
+            <div class="landing-v2-kpi">
+              <small>Device</small>
+              <strong>Mobile ready</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="landing-v2-strip glass-card">
+        <span>Face recognition</span>
+        <b>+</b>
+        <span>Class photo attendance</span>
+        <b>+</b>
+        <span>Manual fallback</span>
+        <b>+</b>
+        <span>Student tracking</span>
+        <b>+</b>
+        <span>Admin oversight</span>
+        <b>+</b>
+        <span>Responsive portal</span>
+      </section>
+
+      <section class="landing-v2-section" id="home-platform">
+        <div class="landing-v2-section-head">
+          <div>
+            <span class="landing-v2-chip">Platform Highlights</span>
+            <h3>Everything important stays visible in seconds.</h3>
+          </div>
+          <p>Inspired by modern SaaS landing pages, but still practical for a real attendance system that needs to be used every day.</p>
+        </div>
+        <div class="landing-v2-feature-grid">
+          <article class="landing-v2-feature-card glass-card is-wide">
+            <span class="landing-v2-feature-tag">01 Portal Experience</span>
+            <h3>Fast entry, clearer actions, and a home screen that finally feels official.</h3>
+            <p>Visitors can understand the platform before they sign in, while teachers and students still reach the working portal in one clean step.</p>
+          </article>
+          <article class="landing-v2-feature-card glass-card">
+            <span class="landing-v2-feature-tag">02 AI Tools</span>
+            <h3>Live camera and upload attendance in one workspace.</h3>
+            <p>Teachers keep both attendance modes close together instead of hunting through different screens.</p>
+          </article>
+          <article class="landing-v2-feature-card glass-card">
+            <span class="landing-v2-feature-tag">03 Records</span>
+            <h3>Manual attendance, summaries, and subject visibility.</h3>
+            <p>Even when AI is not enough, the academic workflow still feels complete and usable.</p>
+          </article>
+          <article class="landing-v2-feature-card glass-card">
+            <span class="landing-v2-feature-tag">04 Access</span>
+            <h3>Teacher, student, and admin journeys stay separated.</h3>
+            <p>Role-based entry removes confusion and makes the product look more polished right after deployment.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="landing-v2-section landing-v2-section-split" id="home-workflow">
+        <div class="landing-v2-story glass-card">
+          <span class="landing-v2-chip alt">Daily Workflow</span>
+          <h3>One system, four clean moves, zero messy handoff.</h3>
+          <p>The landing page now leads naturally into the real product flow. Instead of dropping users straight into a plain login card, the site builds trust first and then moves them into secure actions.</p>
+          <div class="landing-v2-story-points">
+            <div class="landing-v2-story-point">The first screen introduces the product like a real campus platform, not a raw form.</div>
+            <div class="landing-v2-story-point">The login area still stays direct, so regular users are not slowed down.</div>
+            <div class="landing-v2-story-point">The same design language carries into teacher, student, and admin access.</div>
+          </div>
+        </div>
+        <div class="landing-v2-step-stack">
+          <article class="landing-v2-step-card glass-card">
+            <div class="landing-v2-step-no">01</div>
+            <div>
+              <h3>Land on the public front page</h3>
+              <p>Visitors see a proper product introduction, call-to-action buttons, and clear navigation before entering the portal.</p>
+            </div>
+          </article>
+          <article class="landing-v2-step-card glass-card">
+            <div class="landing-v2-step-no">02</div>
+            <div>
+              <h3>Open secure role access</h3>
+              <p>Teachers, students, and admins each move into their own login and dashboard flow without mixing responsibilities.</p>
+            </div>
+          </article>
+          <article class="landing-v2-step-card glass-card">
+            <div class="landing-v2-step-no">03</div>
+            <div>
+              <h3>Run attendance your way</h3>
+              <p>Use camera AI, upload a classroom photo, or switch to manual attendance when the session needs a faster fallback.</p>
+            </div>
+          </article>
+          <article class="landing-v2-step-card glass-card">
+            <div class="landing-v2-step-no">04</div>
+            <div>
+              <h3>Review records and profiles</h3>
+              <p>Students can check their own side, while admins and teachers manage records, attendance corrections, and platform access.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="landing-v2-section" id="home-access">
+        <div class="landing-v2-section-head">
+          <div>
+            <span class="landing-v2-chip">Who Uses It</span>
+            <h3>Built for the people who actually run attendance every day.</h3>
+          </div>
+          <p>The front page now speaks to all three roles instead of feeling like a hidden internal panel with no introduction.</p>
+        </div>
+        <div class="landing-v2-role-grid">
+          <article class="landing-v2-role-card glass-card">
+            <div class="landing-v2-role-top">
+              <div>
+                <span class="landing-v2-role-label">Teacher Portal</span>
+                <h3>Take attendance fast</h3>
+              </div>
+              <div class="landing-v2-role-badge">TR</div>
+            </div>
+            <p>Camera attendance, photo upload, manual marking, registered students, and corrections stay in one operational dashboard.</p>
+          </article>
+          <article class="landing-v2-role-card glass-card">
+            <div class="landing-v2-role-top">
+              <div>
+                <span class="landing-v2-role-label">Student Portal</span>
+                <h3>Check attendance clearly</h3>
+              </div>
+              <div class="landing-v2-role-badge">ST</div>
+            </div>
+            <p>Students get a cleaner view for profile details, attendance percentage, and subject-side records without admin clutter.</p>
+          </article>
+          <article class="landing-v2-role-card glass-card">
+            <div class="landing-v2-role-top">
+              <div>
+                <span class="landing-v2-role-label">Admin Panel</span>
+                <h3>Control the platform</h3>
+              </div>
+              <div class="landing-v2-role-badge">AD</div>
+            </div>
+            <p>Admin actions, record cleanup, account recovery, and oversight stay protected behind the higher-level access flow.</p>
+          </article>
+          <article class="landing-v2-role-card glass-card">
+            <div class="landing-v2-role-top">
+              <div>
+                <span class="landing-v2-role-label">Device Fit</span>
+                <h3>Use it on phone too</h3>
+              </div>
+              <div class="landing-v2-role-badge">MB</div>
+            </div>
+            <p>The landing content now collapses into clean stacked sections so the same portal looks intentional on smaller screens too.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="landing-v2-proof-grid">
+        <article class="landing-v2-proof-card glass-card">
+          <span class="landing-v2-chip alt">Why This Feels Better</span>
+          <h3>A stronger first impression without changing the working core of your project.</h3>
+          <p>The old version looked like a direct login page with a little extra content. This new version behaves more like a product landing experience: it explains what the system is, shows the workflow, highlights the modules, and then pushes users into the portal with more confidence.</p>
+          <div class="landing-v2-proof-note">You still keep the same teacher, student, and admin pages after this. The redesign is focused on the first impression so deployment feels closer to a real polished platform.</div>
+        </article>
+        <div class="landing-v2-proof-stats">
+          <div class="landing-v2-proof-stat">
+            <small>Entry</small>
+            <strong>Public home plus secure portal</strong>
+          </div>
+          <div class="landing-v2-proof-stat">
+            <small>Design</small>
+            <strong>Multi-section landing flow</strong>
+          </div>
+          <div class="landing-v2-proof-stat">
+            <small>Usage</small>
+            <strong>Teacher, student, and admin ready</strong>
+          </div>
+          <div class="landing-v2-proof-stat">
+            <small>Screen size</small>
+            <strong>Desktop and mobile responsive</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="landing-v2-cta-block glass-card" id="home-launch">
+        <div class="landing-v2-cta-copy">
+          <span class="landing-v2-chip">Launch the Portal</span>
+          <h3>Ready to open the attendance system without the weak first impression?</h3>
+          <p>Jump into the secure portal right now or onboard a new teacher or student from the front page itself.</p>
+        </div>
+        <div class="landing-actions">
+          <button class="btn-primary" onclick="goTo('pg-login')">Open Secure Portal</button>
+          <button class="btn-secondary" onclick="goTo('pg-reg-student')">Student Registration</button>
+        </div>
+      </section>
 
       <div class="landing-hero glass-card">
         <div class="landing-copy">
