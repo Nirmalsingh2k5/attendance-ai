@@ -22,7 +22,7 @@ services:
       - key: GUNICORN_THREADS
         value: "1"
       - key: CLASSROOM_MAX_IMAGE_DIMENSION
-        value: "800"
+        value: "640"
       - key: UPLOAD_CLASSROOM_DETECTOR_BACKEND
         value: "opencv"
       - key: REFERENCE_DETECTOR_BACKEND
