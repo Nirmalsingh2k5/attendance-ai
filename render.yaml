@@ -4,7 +4,7 @@ services:
     runtime: python
     plan: free
     buildCommand: "pip install --upgrade pip && pip install -r requirements.txt"
-    startCommand: "gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 240"
+    startCommand: "gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 1 --timeout 240"
     healthCheckPath: /api/system/health
     envVars:
       - key: PYTHON_VERSION
@@ -20,7 +20,15 @@ services:
       - key: WEB_CONCURRENCY
         value: "1"
       - key: GUNICORN_THREADS
-        value: "2"
+        value: "1"
+      - key: CLASSROOM_MAX_IMAGE_DIMENSION
+        value: "800"
+      - key: UPLOAD_CLASSROOM_DETECTOR_BACKEND
+        value: "opencv"
+      - key: REFERENCE_DETECTOR_BACKEND
+        value: "opencv"
+      - key: FALLBACK_DETECTOR_BACKEND
+        value: "opencv"
       - key: GUNICORN_TIMEOUT
         value: "240"
       - key: ATTENDANCE_STORAGE_ROOT
