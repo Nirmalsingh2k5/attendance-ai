@@ -393,6 +393,15 @@ def normalize_role(value):
     return str(value or "").strip().lower()
 
 
+def normalize_invite_code(value):
+    return str(value or "").strip().upper()
+
+
+def generate_teacher_invite_code(length=8):
+    alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    return "".join(secrets.choice(alphabet) for _ in range(max(6, int(length or 8))))
+
+
 def load_face_runtime():
     global DeepFace, verification, FACE_RUNTIME_ERROR, FACE_RUNTIME_LOADED, MATCH_DISTANCE_THRESHOLD
 
@@ -500,6 +509,52 @@ def maybe_upgrade_password(cursor, table_name, user_id, stored_password, provide
         )
 
 
+def get_app_setting(cursor, key, default=""):
+    cursor.execute(
+        "SELECT setting_value FROM app_settings WHERE setting_key=? LIMIT 1",
+        (str(key or "").strip(),),
+    )
+    row = cursor.fetchone()
+    if not row:
+        return default
+    return row["setting_value"] if isinstance(row, sqlite3.Row) else row[0]
+
+
+def set_app_setting(cursor, key, value):
+    now = datetime.now().isoformat()
+    cursor.execute(
+        """
+        INSERT INTO app_settings (setting_key, setting_value, updated_at)
+        VALUES (?, ?, ?)
+        ON CONFLICT(setting_key) DO UPDATE SET
+            setting_value=excluded.setting_value,
+            updated_at=excluded.updated_at
+        """,
+        (str(key or "").strip(), str(value or "").strip(), now),
+    )
+
+
+def get_teacher_invite_code(cursor):
+    stored_code = normalize_invite_code(get_app_setting(cursor, "teacher_invite_code", ""))
+    return stored_code or normalize_invite_code(TEACHER_INVITE_CODE)
+
+
+def verify_admin_session(cursor, admin_userid, admin_secret):
+    normalized_userid = str(admin_userid or "").strip()
+    normalized_secret = str(admin_secret or "").strip()
+    if not normalized_userid or not normalized_secret:
+        return None
+
+    cursor.execute(
+        "SELECT userid, name, secret_key FROM admins WHERE userid=? LIMIT 1",
+        (normalized_userid,),
+    )
+    admin = cursor.fetchone()
+    if not admin or admin["secret_key"] != normalized_secret:
+        return None
+    return admin
+
+
 def next_available_userid(cursor, table_name, name, formatter):
     initials = "".join(word[0] for word in name.split() if word).upper()[:3] or "USR"
     cursor.execute(f"SELECT userid FROM {table_name}")
@@ -597,6 +652,15 @@ def create_database():
         )
         """
     )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS app_settings (
+            setting_key TEXT PRIMARY KEY,
+            setting_value TEXT,
+            updated_at TEXT
+        )
+        """
+    )
     ensure_columns(
         cursor,
         "students",
@@ -617,6 +681,20 @@ def create_database():
             "requester_ip": "TEXT",
         },
     )
+    ensure_columns(
+        cursor,
+        "app_settings",
+        {"setting_value": "TEXT", "updated_at": "TEXT"},
+    )
+    default_teacher_invite_code = normalize_invite_code(TEACHER_INVITE_CODE)
+    if default_teacher_invite_code:
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO app_settings (setting_key, setting_value, updated_at)
+            VALUES (?, ?, ?)
+            """,
+            ("teacher_invite_code", default_teacher_invite_code, datetime.now().isoformat()),
+        )
     conn.commit()
     conn.close()
 
@@ -1312,12 +1390,9 @@ def teacher_register():
     subject = data.get("subject", "").strip()
     cls = data.get("cls", "").strip()
     password = data.get("password", "").strip()
-    invite_code = data.get("invite_code", "").strip()
+    invite_code = normalize_invite_code(data.get("invite_code", ""))
 
-    if invite_code != TEACHER_INVITE_CODE:
-        return jsonify({"success": False, "message": "Wrong invite code!"})
-
-    if not all([name, email, phone, subject, cls, password]):
+    if not all([name, email, phone, subject, cls, password, invite_code]):
         return jsonify({"success": False, "message": "Please fill all fields!"})
     password_error = password_policy_error(password)
     if password_error:
@@ -1325,6 +1400,15 @@ def teacher_register():
 
     conn = get_db()
     cursor = conn.cursor()
+    active_invite_code = get_teacher_invite_code(cursor)
+    if not active_invite_code or invite_code != active_invite_code:
+        conn.close()
+        return jsonify(
+            {
+                "success": False,
+                "message": "Wrong invite code! Please use the current admin-generated teacher invite code.",
+            }
+        )
     cursor.execute("SELECT 1 FROM teachers WHERE email=?", (email,))
     if cursor.fetchone():
         conn.close()
@@ -1360,6 +1444,73 @@ def teacher_register():
             "success": True,
             "userid": userid,
             "message": f"Registration successful! Your ID: {userid}",
+        }
+    )
+
+
+@app.route("/api/admin/teachers", methods=["POST"])
+def admin_create_teacher():
+    data = json_payload()
+    admin_userid = data.get("admin_userid", "").strip()
+    admin_secret = data.get("admin_secret", "").strip()
+    name = data.get("name", "").strip()
+    email = data.get("email", "").strip().lower()
+    phone = data.get("phone", "").strip()
+    subject = data.get("subject", "").strip()
+    cls = data.get("cls", "").strip()
+    password = data.get("password", "").strip()
+
+    if not all([admin_userid, admin_secret]):
+        return jsonify({"success": False, "message": "Admin verification is required."}), 400
+    if not all([name, email, subject, cls, password]):
+        return jsonify({"success": False, "message": "Please fill all required teacher fields."}), 400
+
+    password_error = password_policy_error(password)
+    if password_error:
+        return jsonify({"success": False, "message": password_error}), 400
+
+    conn = get_db()
+    cursor = conn.cursor()
+    admin = verify_admin_session(cursor, admin_userid, admin_secret)
+    if not admin:
+        conn.close()
+        return jsonify({"success": False, "message": "Admin verification failed."}), 403
+
+    cursor.execute("SELECT 1 FROM teachers WHERE email=?", (email,))
+    if cursor.fetchone():
+        conn.close()
+        return jsonify({"success": False, "message": "Email already registered!"}), 409
+
+    userid = next_available_userid(
+        cursor,
+        "teachers",
+        name,
+        lambda initials, count: f"{initials}00{count}",
+    )
+    cursor.execute(
+        """
+        INSERT INTO teachers (userid, name, email, phone, subject, cls, password, joined_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            userid,
+            name,
+            email,
+            phone,
+            subject,
+            cls,
+            generate_password_hash(password),
+            datetime.now().isoformat(),
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+    return jsonify(
+        {
+            "success": True,
+            "userid": userid,
+            "message": f"Teacher {name} registered successfully.",
         }
     )
 
@@ -1727,6 +1878,77 @@ def admin_login():
     )
 
 
+@app.route("/api/admin/dashboard_summary", methods=["POST"])
+def admin_dashboard_summary():
+    data = json_payload()
+    admin_userid = data.get("admin_userid", "").strip()
+    admin_secret = data.get("admin_secret", "").strip()
+
+    if not all([admin_userid, admin_secret]):
+        return jsonify({"success": False, "message": "Admin verification is required."}), 400
+
+    conn = get_db()
+    cursor = conn.cursor()
+    admin = verify_admin_session(cursor, admin_userid, admin_secret)
+    if not admin:
+        conn.close()
+        return jsonify({"success": False, "message": "Admin verification failed."}), 403
+
+    cursor.execute("SELECT COUNT(*) FROM teachers")
+    teachers_count = int(cursor.fetchone()[0] or 0)
+    cursor.execute("SELECT COUNT(*) FROM students")
+    students_count = int(cursor.fetchone()[0] or 0)
+    cursor.execute("SELECT COUNT(*) FROM admins")
+    admins_count = int(cursor.fetchone()[0] or 0)
+    teacher_invite_code = get_teacher_invite_code(cursor)
+    conn.close()
+
+    return jsonify(
+        {
+            "success": True,
+            "summary": {
+                "teachers_count": teachers_count,
+                "students_count": students_count,
+                "admins_count": admins_count,
+                "max_admins": 2,
+                "teacher_invite_code": teacher_invite_code,
+                "invite_code_active_count": 1 if teacher_invite_code else 0,
+            },
+        }
+    )
+
+
+@app.route("/api/admin/teacher_invite_code", methods=["POST"])
+def admin_generate_teacher_invite_code():
+    data = json_payload()
+    admin_userid = data.get("admin_userid", "").strip()
+    admin_secret = data.get("admin_secret", "").strip()
+    requested_code = normalize_invite_code(data.get("invite_code", ""))
+
+    if not all([admin_userid, admin_secret]):
+        return jsonify({"success": False, "message": "Admin verification is required."}), 400
+
+    conn = get_db()
+    cursor = conn.cursor()
+    admin = verify_admin_session(cursor, admin_userid, admin_secret)
+    if not admin:
+        conn.close()
+        return jsonify({"success": False, "message": "Admin verification failed."}), 403
+
+    invite_code = requested_code or generate_teacher_invite_code()
+    set_app_setting(cursor, "teacher_invite_code", invite_code)
+    conn.commit()
+    conn.close()
+
+    return jsonify(
+        {
+            "success": True,
+            "invite_code": invite_code,
+            "message": "Teacher invite code updated successfully.",
+        }
+    )
+
+
 @app.route("/api/password/recover", methods=["POST"])
 def recover_password():
     data = json_payload()
@@ -1874,9 +2096,8 @@ def admin_reset_account_password():
 
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT userid, secret_key FROM admins WHERE userid=?", (admin_userid,))
-    admin = cursor.fetchone()
-    if not admin or admin["secret_key"] != admin_secret:
+    admin = verify_admin_session(cursor, admin_userid, admin_secret)
+    if not admin:
         conn.close()
         return jsonify({"success": False, "message": "Admin verification failed."}), 403
 
@@ -2553,6 +2774,43 @@ def delete_student_record(roll):
         {
             "success": True,
             "message": f"Student deleted successfully. Removed {deleted_photo_folders} photo folder(s) and related attendance records.",
+        }
+    )
+
+
+@app.route("/api/admin/teachers/<userid>", methods=["DELETE"])
+def delete_teacher_record(userid):
+    normalized_userid = str(userid or "").strip()
+    data = json_payload()
+    admin_userid = data.get("admin_userid", "").strip()
+    admin_secret = data.get("admin_secret", "").strip()
+
+    if not normalized_userid:
+        return jsonify({"success": False, "message": "Teacher user ID is required."}), 400
+    if not all([admin_userid, admin_secret]):
+        return jsonify({"success": False, "message": "Admin verification is required."}), 400
+
+    conn = get_db()
+    cursor = conn.cursor()
+    admin = verify_admin_session(cursor, admin_userid, admin_secret)
+    if not admin:
+        conn.close()
+        return jsonify({"success": False, "message": "Admin verification failed."}), 403
+
+    cursor.execute("SELECT userid, name FROM teachers WHERE userid=?", (normalized_userid,))
+    teacher = cursor.fetchone()
+    if not teacher:
+        conn.close()
+        return jsonify({"success": False, "message": "Teacher not found!"}), 404
+
+    cursor.execute("DELETE FROM teachers WHERE userid=?", (normalized_userid,))
+    conn.commit()
+    conn.close()
+
+    return jsonify(
+        {
+            "success": True,
+            "message": f"Teacher {teacher['name']} deleted successfully.",
         }
     )
 

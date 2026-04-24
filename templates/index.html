@@ -5740,7 +5740,7 @@
         <div class="s-ico">🛡️</div>
         <div class="s-lbl">Admins</div>
         <div class="s-val" id="a-stat-admins">0</div>
-        <div class="s-sub">Max 2 allowed</div>
+        <div class="s-sub">Live count</div>
       </div>
       <div class="stat-card">
         <div class="s-ico">🔑</div>
@@ -5763,15 +5763,15 @@
       <div class="section-card" style="border-color:rgba(124,58,237,.15)">
         <h3><span>📊</span> System Overview</h3>
         <p style="font-size:13px;color:var(--text2);line-height:1.7">All system data and registered users are shown
-          here. Generate invite codes to allow teacher registrations. Only <strong>2 admin accounts</strong> can be
-          registered in the system — your credentials and secret key are required for every admin login.</p>
+          here. The admin count below now reflects the live database value, and the active teacher invite code is managed
+          directly from this dashboard.</p>
         <div
           style="margin-top:14px;padding:14px;background:rgba(124,58,237,.07);border:1px solid rgba(124,58,237,.2);border-radius:12px">
           <div
             style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:6px">
             Admin Accounts Used</div>
           <div style="font-size:20px;font-weight:800;color:#C4B5FD;font-family:'Syne',sans-serif"
-            id="a-admin-count-display">— / 2</div>
+            id="a-admin-count-display">0 / 2</div>
         </div>
       </div>
     </div>
@@ -5861,8 +5861,9 @@
     <div class="tab-panel" id="tab-a-codes">
       <div class="section-card" style="border-color:rgba(124,58,237,.15)">
         <h3><span>🔑</span> Teacher Invite Codes</h3>
-        <p style="font-size:12px;color:var(--text3);margin-bottom:18px">Generate one-time invite codes and share them
-          with teachers to allow self-registration.</p>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Generate or rotate the current teacher invite
+          code and share the latest one with teachers for self-registration.</p>
+        <div class="msg-box info" id="a-codes-msg" style="margin-bottom:12px"></div>
         <div style="display:flex;gap:10px;margin-bottom:18px">
           <button class="btn-purple" onclick="generateInviteCode()">➕ Generate New Code</button>
           <button class="btn-secondary" onclick="renderInviteCodes()">🔄 Refresh</button>
@@ -5958,6 +5959,596 @@
     (function () {
       const saved = localStorage.getItem('dseu-theme') || 'light';
       document.documentElement.setAttribute('data-theme', saved);
+    function issueAdminTeacherResetByButton(btn) {
+      const userid = decodeURIComponent(btn?.dataset?.userid || '');
+      const name = decodeURIComponent(btn?.dataset?.name || userid || 'teacher');
+      issueAdminPasswordReset('teacher', userid, name);
+    }
+
+    function deleteTeacherByButton(btn) {
+      const userid = decodeURIComponent(btn?.dataset?.userid || '');
+      const name = decodeURIComponent(btn?.dataset?.name || userid || 'this teacher');
+      deleteTeacherRecord(userid, name);
+    }
+
+    function deleteTeacherRecord(userid, name) {
+      const msg = document.getElementById('a-teachers-msg');
+      if (!userid) return;
+      if (!currentAdminId || !currentAdminSecret) {
+        showMsg(msg, '⚠️ Admin session expired. Please log in again.', 'error');
+        return;
+      }
+      if (!confirm(`Delete teacher ${name}? This action cannot be undone.`)) return;
+      showMsg(msg, '⏳ Deleting teacher record...', 'info');
+      fetchJson(`/api/admin/teachers/${encodeURIComponent(userid)}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          admin_userid: currentAdminId,
+          admin_secret: currentAdminSecret
+        })
+      })
+        .then(({ ok, data }) => {
+          if (!ok || !data.success) {
+            showMsg(msg, '❌ ' + (data.message || 'Unable to delete teacher.'), 'error');
+            return;
+          }
+          showMsg(msg, '✅ ' + data.message, 'success');
+          addLog('red', `Admin deleted teacher: ${name} (${userid})`);
+          loadAdminDataFromDB();
+        })
+        .catch(e => showMsg(msg, '❌ Error: ' + formatClientError(e), 'error'));
+    }
+
+    function copyInviteCodeValue(code) {
+      if (!code) return;
+      navigator.clipboard.writeText(code)
+        .then(() => {
+          const msg = document.getElementById('a-codes-msg');
+          showMsg(msg, '✅ Invite code copied to clipboard.', 'success');
+        })
+        .catch(() => {
+          const msg = document.getElementById('a-codes-msg');
+          showMsg(msg, '❌ Unable to copy the invite code right now.', 'error');
+        });
+    }
+
+    function loadAdminDataFromDB() {
+      fetchJson('/api/students')
+        .then(({ ok, data }) => {
+          const sc = ok && data.success ? data.students.length : 0;
+          document.getElementById('a-stat-students').textContent = sc;
+          const sb = document.getElementById('a-students-body');
+          const studentMsg = document.getElementById('a-students-msg');
+          if (sb && ok && data.success) {
+            sb.innerHTML = data.students.map((s, i) => `
+        <tr>
+          <td>${i + 1}</td><td><b>${s.name}</b><div style="font-size:10px;color:var(--text3);margin-top:4px">${s.registration_completed ? 'Portal login enabled' : 'Student registration pending'}</div></td>
+          <td><code>${s.userid}</code></td>
+          <td>${s.roll}</td><td>${s.email}</td><td>${s.cls}</td>
+          <td><span class="badge ${!s.registration_completed ? 'yellow' : s.percentage < 75 && s.total > 0 ? 'red' : 'green'}">${!s.registration_completed ? 'Pending' : s.total > 0 ? `${s.percentage}%` : '—'}</span></td>
+          <td><button class="btn-danger" type="button" onclick="deleteStudentByButton(this)" data-roll="${encodeURIComponent(s.roll || '')}" data-name="${encodeURIComponent(s.name || '')}">Delete</button></td>
+        </tr>`).join('') || '<tr><td colspan="8" style="color:var(--text3);text-align:center">No students registered</td></tr>';
+          } else if (sb) {
+            sb.innerHTML = '<tr><td colspan="8" style="color:var(--text3);text-align:center">Unable to load students right now</td></tr>';
+          }
+          if (studentMsg) studentMsg.style.display = 'none';
+        })
+        .catch(() => {
+          const sb = document.getElementById('a-students-body');
+          if (sb) sb.innerHTML = '<tr><td colspan="8" style="color:var(--text3);text-align:center">Unable to load students right now</td></tr>';
+        });
+
+      fetchJson('/api/teachers')
+        .then(({ ok, data }) => {
+          const tc = ok && data.success ? data.teachers.length : 0;
+          document.getElementById('a-stat-teachers').textContent = tc;
+          const tb = document.getElementById('a-teachers-body');
+          const teacherMsg = document.getElementById('a-teachers-msg');
+          if (tb && ok && data.success) {
+            tb.innerHTML = data.teachers.map((t, i) => `
+        <tr>
+          <td>${i + 1}</td><td><b>${t.name}</b></td>
+          <td><code>${t.userid}</code></td>
+          <td>${t.email}</td><td>${t.subject}</td><td>${t.cls}</td>
+          <td>
+            <div class="admin-action-wrap" style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn-secondary admin-reset-btn" type="button" onclick="issueAdminTeacherResetByButton(this)" data-userid="${encodeURIComponent(t.userid || '')}" data-name="${encodeURIComponent(t.name || '')}">Reset</button>
+              <button class="btn-danger admin-delete-btn" type="button" onclick="deleteTeacherByButton(this)" data-userid="${encodeURIComponent(t.userid || '')}" data-name="${encodeURIComponent(t.name || '')}">Delete</button>
+            </div>
+          </td>
+        </tr>`).join('') || '<tr><td colspan="7" style="color:var(--text3);text-align:center">No teachers registered</td></tr>';
+          } else if (tb) {
+            tb.innerHTML = '<tr><td colspan="7" style="color:var(--text3);text-align:center">Unable to load teachers right now</td></tr>';
+          }
+          if (teacherMsg) teacherMsg.style.display = 'none';
+          setTimeout(attachAdminResetButtons, 0);
+        })
+        .catch(() => {
+          const tb = document.getElementById('a-teachers-body');
+          if (tb) tb.innerHTML = '<tr><td colspan="7" style="color:var(--text3);text-align:center">Unable to load teachers right now</td></tr>';
+        });
+
+      loadAdminSummary();
+      renderLogs();
+    }
+
+    function deleteTeacher(uid) {
+      deleteTeacherRecord(uid, TEACHERS[uid]?.name || uid);
+    }
+
+    function generateInviteCode() {
+      const msg = document.getElementById('a-codes-msg');
+      if (!currentAdminId || !currentAdminSecret) {
+        showMsg(msg, '⚠️ Admin session expired. Please log in again.', 'error');
+        return;
+      }
+
+      showMsg(msg, '⏳ Generating a new teacher invite code...', 'info');
+      fetchJson('/api/admin/teacher_invite_code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          admin_userid: currentAdminId,
+          admin_secret: currentAdminSecret
+        })
+      })
+        .then(({ ok, data }) => {
+          if (!ok || !data.success) {
+            showMsg(msg, '❌ ' + (data.message || 'Unable to generate invite code.'), 'error');
+            return;
+          }
+
+          activeTeacherInviteCode = data.invite_code || '';
+          adminSummary = {
+            ...(adminSummary || {}),
+            teacher_invite_code: activeTeacherInviteCode,
+            invite_code_active_count: activeTeacherInviteCode ? 1 : 0
+          };
+          updateAdminStats(adminSummary);
+          renderInviteCodes();
+          showMsg(msg, '✅ ' + data.message, 'success');
+          addLog('blue', `Teacher invite code updated: ${activeTeacherInviteCode}`);
+        })
+        .catch(e => showMsg(msg, '❌ Error: ' + formatClientError(e), 'error'));
+    }
+
+    function renderInviteCodes() {
+      const el = document.getElementById('invite-codes-list');
+      const msg = document.getElementById('a-codes-msg');
+      if (!el) return;
+
+      if (!activeTeacherInviteCode) {
+        el.innerHTML = '<p style="font-size:12px;color:var(--text3)">No active teacher invite code found yet. Generate one from the button above.</p>';
+        if (msg && !msg.textContent.trim()) msg.style.display = 'none';
+        return;
+      }
+
+      el.innerHTML = `
+    <div class="invite-code-box">
+      <span class="invite-code-val">${activeTeacherInviteCode}</span>
+      <div class="invite-code-meta">
+        Current active teacher invite code<br>
+        Teachers must use this latest code while registering.
+      </div>
+      <span class="badge blue">Active</span>
+      <button class="copy-btn" type="button" onclick="copyInviteCodeValue('${activeTeacherInviteCode}')">Copy</button>
+    </div>`;
+      if (msg && !msg.textContent.trim()) msg.style.display = 'none';
+    }
+
+    function doAdminRegisterTeacher() {
+      const name = document.getElementById('ar-name').value.trim();
+      const email = document.getElementById('ar-email').value.trim();
+      const phone = document.getElementById('ar-phone').value.trim();
+      const subject = document.getElementById('ar-subject').value;
+      const cls = document.getElementById('ar-class').value;
+      const pass = document.getElementById('ar-pass').value.trim();
+      const err = document.getElementById('a-reg-err');
+      const ok = document.getElementById('a-reg-ok');
+
+      if (!currentAdminId || !currentAdminSecret) {
+        showMsg(err, '⚠️ Admin session expired. Please log in again.', 'error');
+        ok.style.display = 'none';
+        return;
+      }
+      if (!name || !email || !subject || !cls || !pass) {
+        showMsg(err, '⚠️ Please fill all required fields.', 'error');
+        ok.style.display = 'none';
+        return;
+      }
+
+      showMsg(ok, '⏳ Registering teacher...', 'info');
+      err.style.display = 'none';
+      fetchJson('/api/admin/teachers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          admin_userid: currentAdminId,
+          admin_secret: currentAdminSecret,
+          name,
+          email,
+          phone,
+          subject,
+          cls,
+          password: pass
+        })
+      })
+        .then(({ ok: responseOk, data }) => {
+          if (!responseOk || !data.success) {
+            ok.style.display = 'none';
+            showMsg(err, '❌ ' + (data.message || 'Unable to register teacher.'), 'error');
+            return;
+          }
+
+          showMsg(ok, `✅ ${data.message} Teacher ID: ${data.userid}`, 'success');
+          addLog('green', `Admin registered teacher: ${name} (${data.userid})`);
+          ['ar-name', 'ar-email', 'ar-phone', 'ar-pass'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+          });
+          ['ar-subject', 'ar-class'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.selectedIndex = 0;
+          });
+          const uidPreview = document.getElementById('ar-userid');
+          if (uidPreview) uidPreview.value = data.userid || '';
+          loadAdminDataFromDB();
+        })
+        .catch(e => {
+          ok.style.display = 'none';
+          showMsg(err, '❌ Error: ' + formatClientError(e), 'error');
+        });
+    }
+
+    function attachAdminResetButtons() {
+      const studentRows = document.querySelectorAll('#a-students-body tr');
+      studentRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const actionCell = cells[7];
+        if (!actionCell || actionCell.querySelector('.admin-reset-btn')) return;
+        const roll = (cells[3]?.textContent || '').trim();
+        const name = (cells[1]?.querySelector('b')?.textContent || cells[1]?.textContent || 'student').trim();
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn-secondary admin-reset-btn';
+        btn.textContent = 'Reset';
+        btn.style.marginRight = '8px';
+        btn.onclick = () => issueAdminPasswordReset('student', roll, name);
+        actionCell.prepend(btn);
+      });
+
+      const teacherRows = document.querySelectorAll('#a-teachers-body tr');
+      teacherRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const actionCell = cells[6];
+        if (!actionCell) return;
+        const userid = (cells[2]?.textContent || '').trim();
+        const name = (cells[1]?.querySelector('b')?.textContent || cells[1]?.textContent || 'teacher').trim();
+        let wrap = actionCell.querySelector('.admin-action-wrap');
+        if (!wrap) {
+          wrap = document.createElement('div');
+          wrap.className = 'admin-action-wrap';
+          wrap.style.display = 'flex';
+          wrap.style.gap = '8px';
+          wrap.style.flexWrap = 'wrap';
+          actionCell.innerHTML = '';
+          actionCell.appendChild(wrap);
+        }
+        if (!wrap.querySelector('.admin-reset-btn')) {
+          const resetBtn = document.createElement('button');
+          resetBtn.type = 'button';
+          resetBtn.className = 'btn-secondary admin-reset-btn';
+          resetBtn.textContent = 'Reset';
+          resetBtn.onclick = () => issueAdminPasswordReset('teacher', userid, name);
+          wrap.appendChild(resetBtn);
+        }
+        if (!wrap.querySelector('.admin-delete-btn')) {
+          const deleteBtn = document.createElement('button');
+          deleteBtn.type = 'button';
+          deleteBtn.className = 'btn-danger admin-delete-btn';
+          deleteBtn.textContent = 'Delete';
+          deleteBtn.onclick = () => deleteTeacherRecord(userid, name);
+          wrap.appendChild(deleteBtn);
+        }
+      });
+    }
+
+    function issueAdminTeacherResetByButton(btn) {
+      const userid = decodeURIComponent(btn?.dataset?.userid || '');
+      const name = decodeURIComponent(btn?.dataset?.name || userid || 'teacher');
+      issueAdminPasswordReset('teacher', userid, name);
+    }
+
+    function deleteTeacherByButton(btn) {
+      const userid = decodeURIComponent(btn?.dataset?.userid || '');
+      const name = decodeURIComponent(btn?.dataset?.name || userid || 'this teacher');
+      deleteTeacherRecord(userid, name);
+    }
+
+    function deleteTeacherRecord(userid, name) {
+      const msg = document.getElementById('a-teachers-msg');
+      if (!userid) return;
+      if (!currentAdminId || !currentAdminSecret) {
+        showMsg(msg, '⚠️ Admin session expired. Please log in again.', 'error');
+        return;
+      }
+      if (!confirm(`Delete teacher ${name}? This action cannot be undone.`)) return;
+      showMsg(msg, '⏳ Deleting teacher record...', 'info');
+      fetchJson(`/api/admin/teachers/${encodeURIComponent(userid)}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          admin_userid: currentAdminId,
+          admin_secret: currentAdminSecret
+        })
+      })
+        .then(({ ok, data }) => {
+          if (!ok || !data.success) {
+            showMsg(msg, '❌ ' + (data.message || 'Unable to delete teacher.'), 'error');
+            return;
+          }
+          showMsg(msg, '✅ ' + data.message, 'success');
+          addLog('red', `Admin deleted teacher: ${name} (${userid})`);
+          loadAdminDataFromDB();
+        })
+        .catch(e => showMsg(msg, '❌ Error: ' + formatClientError(e), 'error'));
+    }
+
+    function copyInviteCodeValue(code) {
+      if (!code) return;
+      navigator.clipboard.writeText(code)
+        .then(() => {
+          const msg = document.getElementById('a-codes-msg');
+          showMsg(msg, '✅ Invite code copied to clipboard.', 'success');
+        })
+        .catch(() => {
+          const msg = document.getElementById('a-codes-msg');
+          showMsg(msg, '❌ Unable to copy the invite code right now.', 'error');
+        });
+    }
+
+    function loadAdminDataFromDB() {
+      fetchJson('/api/students')
+        .then(({ ok, data }) => {
+          const sc = ok && data.success ? data.students.length : 0;
+          document.getElementById('a-stat-students').textContent = sc;
+          const sb = document.getElementById('a-students-body');
+          const studentMsg = document.getElementById('a-students-msg');
+          if (sb && ok && data.success) {
+            sb.innerHTML = data.students.map((s, i) => `
+        <tr>
+          <td>${i + 1}</td><td><b>${s.name}</b><div style="font-size:10px;color:var(--text3);margin-top:4px">${s.registration_completed ? 'Portal login enabled' : 'Student registration pending'}</div></td>
+          <td><code>${s.userid}</code></td>
+          <td>${s.roll}</td><td>${s.email}</td><td>${s.cls}</td>
+          <td><span class="badge ${!s.registration_completed ? 'yellow' : s.percentage < 75 && s.total > 0 ? 'red' : 'green'}">${!s.registration_completed ? 'Pending' : s.total > 0 ? `${s.percentage}%` : '—'}</span></td>
+          <td><button class="btn-danger" type="button" onclick="deleteStudentByButton(this)" data-roll="${encodeURIComponent(s.roll || '')}" data-name="${encodeURIComponent(s.name || '')}">Delete</button></td>
+        </tr>`).join('') || '<tr><td colspan="8" style="color:var(--text3);text-align:center">No students registered</td></tr>';
+          } else if (sb) {
+            sb.innerHTML = '<tr><td colspan="8" style="color:var(--text3);text-align:center">Unable to load students right now</td></tr>';
+          }
+          if (studentMsg) studentMsg.style.display = 'none';
+        })
+        .catch(() => {
+          const sb = document.getElementById('a-students-body');
+          if (sb) sb.innerHTML = '<tr><td colspan="8" style="color:var(--text3);text-align:center">Unable to load students right now</td></tr>';
+        });
+
+      fetchJson('/api/teachers')
+        .then(({ ok, data }) => {
+          const tc = ok && data.success ? data.teachers.length : 0;
+          document.getElementById('a-stat-teachers').textContent = tc;
+          const tb = document.getElementById('a-teachers-body');
+          const teacherMsg = document.getElementById('a-teachers-msg');
+          if (tb && ok && data.success) {
+            tb.innerHTML = data.teachers.map((t, i) => `
+        <tr>
+          <td>${i + 1}</td><td><b>${t.name}</b></td>
+          <td><code>${t.userid}</code></td>
+          <td>${t.email}</td><td>${t.subject}</td><td>${t.cls}</td>
+          <td>
+            <div class="admin-action-wrap" style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn-secondary admin-reset-btn" type="button" onclick="issueAdminTeacherResetByButton(this)" data-userid="${encodeURIComponent(t.userid || '')}" data-name="${encodeURIComponent(t.name || '')}">Reset</button>
+              <button class="btn-danger admin-delete-btn" type="button" onclick="deleteTeacherByButton(this)" data-userid="${encodeURIComponent(t.userid || '')}" data-name="${encodeURIComponent(t.name || '')}">Delete</button>
+            </div>
+          </td>
+        </tr>`).join('') || '<tr><td colspan="7" style="color:var(--text3);text-align:center">No teachers registered</td></tr>';
+          } else if (tb) {
+            tb.innerHTML = '<tr><td colspan="7" style="color:var(--text3);text-align:center">Unable to load teachers right now</td></tr>';
+          }
+          if (teacherMsg) teacherMsg.style.display = 'none';
+          setTimeout(attachAdminResetButtons, 0);
+        })
+        .catch(() => {
+          const tb = document.getElementById('a-teachers-body');
+          if (tb) tb.innerHTML = '<tr><td colspan="7" style="color:var(--text3);text-align:center">Unable to load teachers right now</td></tr>';
+        });
+
+      loadAdminSummary();
+      renderLogs();
+    }
+
+    function deleteTeacher(uid) {
+      deleteTeacherRecord(uid, TEACHERS[uid]?.name || uid);
+    }
+
+    function generateInviteCode() {
+      const msg = document.getElementById('a-codes-msg');
+      if (!currentAdminId || !currentAdminSecret) {
+        showMsg(msg, '⚠️ Admin session expired. Please log in again.', 'error');
+        return;
+      }
+
+      showMsg(msg, '⏳ Generating a new teacher invite code...', 'info');
+      fetchJson('/api/admin/teacher_invite_code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          admin_userid: currentAdminId,
+          admin_secret: currentAdminSecret
+        })
+      })
+        .then(({ ok, data }) => {
+          if (!ok || !data.success) {
+            showMsg(msg, '❌ ' + (data.message || 'Unable to generate invite code.'), 'error');
+            return;
+          }
+
+          activeTeacherInviteCode = data.invite_code || '';
+          adminSummary = {
+            ...(adminSummary || {}),
+            teacher_invite_code: activeTeacherInviteCode,
+            invite_code_active_count: activeTeacherInviteCode ? 1 : 0
+          };
+          updateAdminStats(adminSummary);
+          renderInviteCodes();
+          showMsg(msg, '✅ ' + data.message, 'success');
+          addLog('blue', `Teacher invite code updated: ${activeTeacherInviteCode}`);
+        })
+        .catch(e => showMsg(msg, '❌ Error: ' + formatClientError(e), 'error'));
+    }
+
+    function renderInviteCodes() {
+      const el = document.getElementById('invite-codes-list');
+      const msg = document.getElementById('a-codes-msg');
+      if (!el) return;
+
+      if (!activeTeacherInviteCode) {
+        el.innerHTML = '<p style="font-size:12px;color:var(--text3)">No active teacher invite code found yet. Generate one from the button above.</p>';
+        if (msg && !msg.textContent.trim()) msg.style.display = 'none';
+        return;
+      }
+
+      el.innerHTML = `
+    <div class="invite-code-box">
+      <span class="invite-code-val">${activeTeacherInviteCode}</span>
+      <div class="invite-code-meta">
+        Current active teacher invite code<br>
+        Teachers must use this latest code while registering.
+      </div>
+      <span class="badge blue">Active</span>
+      <button class="copy-btn" type="button" onclick="copyInviteCodeValue('${activeTeacherInviteCode}')">Copy</button>
+    </div>`;
+      if (msg && !msg.textContent.trim()) msg.style.display = 'none';
+    }
+
+    function doAdminRegisterTeacher() {
+      const name = document.getElementById('ar-name').value.trim();
+      const email = document.getElementById('ar-email').value.trim();
+      const phone = document.getElementById('ar-phone').value.trim();
+      const subject = document.getElementById('ar-subject').value;
+      const cls = document.getElementById('ar-class').value;
+      const pass = document.getElementById('ar-pass').value.trim();
+      const err = document.getElementById('a-reg-err');
+      const ok = document.getElementById('a-reg-ok');
+
+      if (!currentAdminId || !currentAdminSecret) {
+        showMsg(err, '⚠️ Admin session expired. Please log in again.', 'error');
+        ok.style.display = 'none';
+        return;
+      }
+      if (!name || !email || !subject || !cls || !pass) {
+        showMsg(err, '⚠️ Please fill all required fields.', 'error');
+        ok.style.display = 'none';
+        return;
+      }
+
+      showMsg(ok, '⏳ Registering teacher...', 'info');
+      err.style.display = 'none';
+      fetchJson('/api/admin/teachers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          admin_userid: currentAdminId,
+          admin_secret: currentAdminSecret,
+          name,
+          email,
+          phone,
+          subject,
+          cls,
+          password: pass
+        })
+      })
+        .then(({ ok: responseOk, data }) => {
+          if (!responseOk || !data.success) {
+            ok.style.display = 'none';
+            showMsg(err, '❌ ' + (data.message || 'Unable to register teacher.'), 'error');
+            return;
+          }
+
+          showMsg(ok, `✅ ${data.message} Teacher ID: ${data.userid}`, 'success');
+          addLog('green', `Admin registered teacher: ${name} (${data.userid})`);
+          ['ar-name', 'ar-email', 'ar-phone', 'ar-pass'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+          });
+          ['ar-subject', 'ar-class'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.selectedIndex = 0;
+          });
+          const uidPreview = document.getElementById('ar-userid');
+          if (uidPreview) uidPreview.value = data.userid || '';
+          loadAdminDataFromDB();
+        })
+        .catch(e => {
+          ok.style.display = 'none';
+          showMsg(err, '❌ Error: ' + formatClientError(e), 'error');
+        });
+    }
+
+    function attachAdminResetButtons() {
+      const studentRows = document.querySelectorAll('#a-students-body tr');
+      studentRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const actionCell = cells[7];
+        if (!actionCell || actionCell.querySelector('.admin-reset-btn')) return;
+        const roll = (cells[3]?.textContent || '').trim();
+        const name = (cells[1]?.querySelector('b')?.textContent || cells[1]?.textContent || 'student').trim();
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn-secondary admin-reset-btn';
+        btn.textContent = 'Reset';
+        btn.style.marginRight = '8px';
+        btn.onclick = () => issueAdminPasswordReset('student', roll, name);
+        actionCell.prepend(btn);
+      });
+
+      const teacherRows = document.querySelectorAll('#a-teachers-body tr');
+      teacherRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const actionCell = cells[6];
+        if (!actionCell) return;
+        const userid = (cells[2]?.textContent || '').trim();
+        const name = (cells[1]?.querySelector('b')?.textContent || cells[1]?.textContent || 'teacher').trim();
+        let wrap = actionCell.querySelector('.admin-action-wrap');
+        if (!wrap) {
+          wrap = document.createElement('div');
+          wrap.className = 'admin-action-wrap';
+          wrap.style.display = 'flex';
+          wrap.style.gap = '8px';
+          wrap.style.flexWrap = 'wrap';
+          actionCell.innerHTML = '';
+          actionCell.appendChild(wrap);
+        }
+        if (!wrap.querySelector('.admin-reset-btn')) {
+          const resetBtn = document.createElement('button');
+          resetBtn.type = 'button';
+          resetBtn.className = 'btn-secondary admin-reset-btn';
+          resetBtn.textContent = 'Reset';
+          resetBtn.onclick = () => issueAdminPasswordReset('teacher', userid, name);
+          wrap.appendChild(resetBtn);
+        }
+        if (!wrap.querySelector('.admin-delete-btn')) {
+          const deleteBtn = document.createElement('button');
+          deleteBtn.type = 'button';
+          deleteBtn.className = 'btn-danger admin-delete-btn';
+          deleteBtn.textContent = 'Delete';
+          deleteBtn.onclick = () => deleteTeacherRecord(userid, name);
+          wrap.appendChild(deleteBtn);
+        }
+      });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('theme-btn').textContent = saved === 'light' ? '🌙' : '☀️';
       animateEntrance(document.querySelector('.page.active'));
@@ -5990,6 +6581,8 @@
     const ADMINS = {};                // Populated when admins register
     const MAX_ADMINS = 2;             // Maximum 2 admins allowed
     let INVITE_CODES = [];
+    let activeTeacherInviteCode = '';
+    let adminSummary = null;
     let regCounter = 2;
     let sRegCounter = 2;
     let adminRegCounter = 1;
@@ -6472,23 +7065,62 @@
       document.getElementById('a-dash-role').textContent = (data.role || 'Admin') + ' — ' + (data.dept || 'Administration');
       document.getElementById('a-logged-as').textContent = 'Logged in as: ' + (data.name || uid);
       loadAdminDataFromDB();
-      setTimeout(attachAdminResetButtons, 150);
       loadAdminAttendanceRecords();
       renderInviteCodes();
       renderLogs();
     }
 
-    function updateAdminStats() {
-      const tc = Object.keys(TEACHERS).length;
-      const sc = Object.keys(STUDENTS).length;
-      const ac = Object.keys(ADMINS).length;
-      const cc = INVITE_CODES.filter(c => !c.used && new Date(c.expiresAt) > new Date()).length;
+    function updateAdminStats(summary = adminSummary) {
+      const tc = Number.isFinite(summary?.teachers_count) ? summary.teachers_count : Object.keys(TEACHERS).length;
+      const sc = Number.isFinite(summary?.students_count) ? summary.students_count : Object.keys(STUDENTS).length;
+      const ac = Number.isFinite(summary?.admins_count) ? summary.admins_count : Object.keys(ADMINS).length;
+      const maxAdmins = Number.isFinite(summary?.max_admins) ? summary.max_admins : MAX_ADMINS;
+      const cc = Number.isFinite(summary?.invite_code_active_count)
+        ? summary.invite_code_active_count
+        : (activeTeacherInviteCode ? 1 : INVITE_CODES.filter(c => !c.used && new Date(c.expiresAt) > new Date()).length);
       const e = id => { const el = document.getElementById(id); if (el) return el; return { textContent: '' }; };
       e('a-stat-teachers').textContent = tc;
       e('a-stat-students').textContent = sc;
       e('a-stat-admins').textContent = ac;
       e('a-stat-codes').textContent = cc;
-      e('a-admin-count-display').textContent = ac + ' / 2';
+      e('a-admin-count-display').textContent = `${ac} / ${maxAdmins}`;
+    }
+
+    function loadAdminSummary() {
+      if (!currentAdminId || !currentAdminSecret) {
+        adminSummary = null;
+        activeTeacherInviteCode = '';
+        updateAdminStats();
+        renderInviteCodes();
+        return Promise.resolve();
+      }
+
+      return fetchJson('/api/admin/dashboard_summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          admin_userid: currentAdminId,
+          admin_secret: currentAdminSecret
+        })
+      }).then(({ ok, data }) => {
+        if (!ok || !data.success) {
+          adminSummary = null;
+          activeTeacherInviteCode = '';
+          updateAdminStats();
+          renderInviteCodes();
+          return;
+        }
+
+        adminSummary = data.summary || {};
+        activeTeacherInviteCode = adminSummary.teacher_invite_code || '';
+        updateAdminStats(adminSummary);
+        renderInviteCodes();
+      }).catch(() => {
+        adminSummary = null;
+        activeTeacherInviteCode = '';
+        updateAdminStats();
+        renderInviteCodes();
+      });
     }
     function updateDashboardStats(students) {
       // 1. Total Students count update
@@ -8082,6 +8714,301 @@
 
     function downloadManualCSV() {
       window.location.href = '/api/download_excel';
+    }
+
+    function issueAdminTeacherResetByButton(btn) {
+      const userid = decodeURIComponent(btn?.dataset?.userid || '');
+      const name = decodeURIComponent(btn?.dataset?.name || userid || 'teacher');
+      issueAdminPasswordReset('teacher', userid, name);
+    }
+
+    function deleteTeacherByButton(btn) {
+      const userid = decodeURIComponent(btn?.dataset?.userid || '');
+      const name = decodeURIComponent(btn?.dataset?.name || userid || 'this teacher');
+      deleteTeacherRecord(userid, name);
+    }
+
+    function deleteTeacherRecord(userid, name) {
+      const msg = document.getElementById('a-teachers-msg');
+      if (!userid) return;
+      if (!currentAdminId || !currentAdminSecret) {
+        showMsg(msg, '⚠️ Admin session expired. Please log in again.', 'error');
+        return;
+      }
+      if (!confirm(`Delete teacher ${name}? This action cannot be undone.`)) return;
+      showMsg(msg, '⏳ Deleting teacher record...', 'info');
+      fetchJson(`/api/admin/teachers/${encodeURIComponent(userid)}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          admin_userid: currentAdminId,
+          admin_secret: currentAdminSecret
+        })
+      })
+        .then(({ ok, data }) => {
+          if (!ok || !data.success) {
+            showMsg(msg, '❌ ' + (data.message || 'Unable to delete teacher.'), 'error');
+            return;
+          }
+          showMsg(msg, '✅ ' + data.message, 'success');
+          addLog('red', `Admin deleted teacher: ${name} (${userid})`);
+          loadAdminDataFromDB();
+        })
+        .catch(e => showMsg(msg, '❌ Error: ' + formatClientError(e), 'error'));
+    }
+
+    function copyInviteCodeValue(code) {
+      if (!code) return;
+      navigator.clipboard.writeText(code)
+        .then(() => {
+          const msg = document.getElementById('a-codes-msg');
+          showMsg(msg, '✅ Invite code copied to clipboard.', 'success');
+        })
+        .catch(() => {
+          const msg = document.getElementById('a-codes-msg');
+          showMsg(msg, '❌ Unable to copy the invite code right now.', 'error');
+        });
+    }
+
+    function loadAdminDataFromDB() {
+      fetchJson('/api/students')
+        .then(({ ok, data }) => {
+          const sc = ok && data.success ? data.students.length : 0;
+          document.getElementById('a-stat-students').textContent = sc;
+          const sb = document.getElementById('a-students-body');
+          const studentMsg = document.getElementById('a-students-msg');
+          if (sb && ok && data.success) {
+            sb.innerHTML = data.students.map((s, i) => `
+        <tr>
+          <td>${i + 1}</td><td><b>${s.name}</b><div style="font-size:10px;color:var(--text3);margin-top:4px">${s.registration_completed ? 'Portal login enabled' : 'Student registration pending'}</div></td>
+          <td><code>${s.userid}</code></td>
+          <td>${s.roll}</td><td>${s.email}</td><td>${s.cls}</td>
+          <td><span class="badge ${!s.registration_completed ? 'yellow' : s.percentage < 75 && s.total > 0 ? 'red' : 'green'}">${!s.registration_completed ? 'Pending' : s.total > 0 ? `${s.percentage}%` : '—'}</span></td>
+          <td><button class="btn-danger" type="button" onclick="deleteStudentByButton(this)" data-roll="${encodeURIComponent(s.roll || '')}" data-name="${encodeURIComponent(s.name || '')}">Delete</button></td>
+        </tr>`).join('') || '<tr><td colspan="8" style="color:var(--text3);text-align:center">No students registered</td></tr>';
+          } else if (sb) {
+            sb.innerHTML = '<tr><td colspan="8" style="color:var(--text3);text-align:center">Unable to load students right now</td></tr>';
+          }
+          if (studentMsg) studentMsg.style.display = 'none';
+        })
+        .catch(() => {
+          const sb = document.getElementById('a-students-body');
+          if (sb) sb.innerHTML = '<tr><td colspan="8" style="color:var(--text3);text-align:center">Unable to load students right now</td></tr>';
+        });
+
+      fetchJson('/api/teachers')
+        .then(({ ok, data }) => {
+          const tc = ok && data.success ? data.teachers.length : 0;
+          document.getElementById('a-stat-teachers').textContent = tc;
+          const tb = document.getElementById('a-teachers-body');
+          const teacherMsg = document.getElementById('a-teachers-msg');
+          if (tb && ok && data.success) {
+            tb.innerHTML = data.teachers.map((t, i) => `
+        <tr>
+          <td>${i + 1}</td><td><b>${t.name}</b></td>
+          <td><code>${t.userid}</code></td>
+          <td>${t.email}</td><td>${t.subject}</td><td>${t.cls}</td>
+          <td>
+            <div class="admin-action-wrap" style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn-secondary admin-reset-btn" type="button" onclick="issueAdminTeacherResetByButton(this)" data-userid="${encodeURIComponent(t.userid || '')}" data-name="${encodeURIComponent(t.name || '')}">Reset</button>
+              <button class="btn-danger admin-delete-btn" type="button" onclick="deleteTeacherByButton(this)" data-userid="${encodeURIComponent(t.userid || '')}" data-name="${encodeURIComponent(t.name || '')}">Delete</button>
+            </div>
+          </td>
+        </tr>`).join('') || '<tr><td colspan="7" style="color:var(--text3);text-align:center">No teachers registered</td></tr>';
+          } else if (tb) {
+            tb.innerHTML = '<tr><td colspan="7" style="color:var(--text3);text-align:center">Unable to load teachers right now</td></tr>';
+          }
+          if (teacherMsg) teacherMsg.style.display = 'none';
+          setTimeout(attachAdminResetButtons, 0);
+        })
+        .catch(() => {
+          const tb = document.getElementById('a-teachers-body');
+          if (tb) tb.innerHTML = '<tr><td colspan="7" style="color:var(--text3);text-align:center">Unable to load teachers right now</td></tr>';
+        });
+
+      loadAdminSummary();
+      renderLogs();
+    }
+
+    function deleteTeacher(uid) {
+      deleteTeacherRecord(uid, TEACHERS[uid]?.name || uid);
+    }
+
+    function generateInviteCode() {
+      const msg = document.getElementById('a-codes-msg');
+      if (!currentAdminId || !currentAdminSecret) {
+        showMsg(msg, '⚠️ Admin session expired. Please log in again.', 'error');
+        return;
+      }
+
+      showMsg(msg, '⏳ Generating a new teacher invite code...', 'info');
+      fetchJson('/api/admin/teacher_invite_code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          admin_userid: currentAdminId,
+          admin_secret: currentAdminSecret
+        })
+      })
+        .then(({ ok, data }) => {
+          if (!ok || !data.success) {
+            showMsg(msg, '❌ ' + (data.message || 'Unable to generate invite code.'), 'error');
+            return;
+          }
+
+          activeTeacherInviteCode = data.invite_code || '';
+          adminSummary = {
+            ...(adminSummary || {}),
+            teacher_invite_code: activeTeacherInviteCode,
+            invite_code_active_count: activeTeacherInviteCode ? 1 : 0
+          };
+          updateAdminStats(adminSummary);
+          renderInviteCodes();
+          showMsg(msg, '✅ ' + data.message, 'success');
+          addLog('blue', `Teacher invite code updated: ${activeTeacherInviteCode}`);
+        })
+        .catch(e => showMsg(msg, '❌ Error: ' + formatClientError(e), 'error'));
+    }
+
+    function renderInviteCodes() {
+      const el = document.getElementById('invite-codes-list');
+      const msg = document.getElementById('a-codes-msg');
+      if (!el) return;
+
+      if (!activeTeacherInviteCode) {
+        el.innerHTML = '<p style="font-size:12px;color:var(--text3)">No active teacher invite code found yet. Generate one from the button above.</p>';
+        if (msg && !msg.textContent.trim()) msg.style.display = 'none';
+        return;
+      }
+
+      el.innerHTML = `
+    <div class="invite-code-box">
+      <span class="invite-code-val">${activeTeacherInviteCode}</span>
+      <div class="invite-code-meta">
+        Current active teacher invite code<br>
+        Teachers must use this latest code while registering.
+      </div>
+      <span class="badge blue">Active</span>
+      <button class="copy-btn" type="button" onclick="copyInviteCodeValue('${activeTeacherInviteCode}')">Copy</button>
+    </div>`;
+      if (msg && !msg.textContent.trim()) msg.style.display = 'none';
+    }
+
+    function doAdminRegisterTeacher() {
+      const name = document.getElementById('ar-name').value.trim();
+      const email = document.getElementById('ar-email').value.trim();
+      const phone = document.getElementById('ar-phone').value.trim();
+      const subject = document.getElementById('ar-subject').value;
+      const cls = document.getElementById('ar-class').value;
+      const pass = document.getElementById('ar-pass').value.trim();
+      const err = document.getElementById('a-reg-err');
+      const ok = document.getElementById('a-reg-ok');
+
+      if (!currentAdminId || !currentAdminSecret) {
+        showMsg(err, '⚠️ Admin session expired. Please log in again.', 'error');
+        ok.style.display = 'none';
+        return;
+      }
+      if (!name || !email || !subject || !cls || !pass) {
+        showMsg(err, '⚠️ Please fill all required fields.', 'error');
+        ok.style.display = 'none';
+        return;
+      }
+
+      showMsg(ok, '⏳ Registering teacher...', 'info');
+      err.style.display = 'none';
+      fetchJson('/api/admin/teachers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          admin_userid: currentAdminId,
+          admin_secret: currentAdminSecret,
+          name,
+          email,
+          phone,
+          subject,
+          cls,
+          password: pass
+        })
+      })
+        .then(({ ok: responseOk, data }) => {
+          if (!responseOk || !data.success) {
+            ok.style.display = 'none';
+            showMsg(err, '❌ ' + (data.message || 'Unable to register teacher.'), 'error');
+            return;
+          }
+
+          showMsg(ok, `✅ ${data.message} Teacher ID: ${data.userid}`, 'success');
+          addLog('green', `Admin registered teacher: ${name} (${data.userid})`);
+          ['ar-name', 'ar-email', 'ar-phone', 'ar-pass'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+          });
+          ['ar-subject', 'ar-class'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.selectedIndex = 0;
+          });
+          const uidPreview = document.getElementById('ar-userid');
+          if (uidPreview) uidPreview.value = data.userid || '';
+          loadAdminDataFromDB();
+        })
+        .catch(e => {
+          ok.style.display = 'none';
+          showMsg(err, '❌ Error: ' + formatClientError(e), 'error');
+        });
+    }
+
+    function attachAdminResetButtons() {
+      const studentRows = document.querySelectorAll('#a-students-body tr');
+      studentRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const actionCell = cells[7];
+        if (!actionCell || actionCell.querySelector('.admin-reset-btn')) return;
+        const roll = (cells[3]?.textContent || '').trim();
+        const name = (cells[1]?.querySelector('b')?.textContent || cells[1]?.textContent || 'student').trim();
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn-secondary admin-reset-btn';
+        btn.textContent = 'Reset';
+        btn.style.marginRight = '8px';
+        btn.onclick = () => issueAdminPasswordReset('student', roll, name);
+        actionCell.prepend(btn);
+      });
+
+      const teacherRows = document.querySelectorAll('#a-teachers-body tr');
+      teacherRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const actionCell = cells[6];
+        if (!actionCell) return;
+        const userid = (cells[2]?.textContent || '').trim();
+        const name = (cells[1]?.querySelector('b')?.textContent || cells[1]?.textContent || 'teacher').trim();
+        let wrap = actionCell.querySelector('.admin-action-wrap');
+        if (!wrap) {
+          wrap = document.createElement('div');
+          wrap.className = 'admin-action-wrap';
+          wrap.style.display = 'flex';
+          wrap.style.gap = '8px';
+          wrap.style.flexWrap = 'wrap';
+          actionCell.innerHTML = '';
+          actionCell.appendChild(wrap);
+        }
+        if (!wrap.querySelector('.admin-reset-btn')) {
+          const resetBtn = document.createElement('button');
+          resetBtn.type = 'button';
+          resetBtn.className = 'btn-secondary admin-reset-btn';
+          resetBtn.textContent = 'Reset';
+          resetBtn.onclick = () => issueAdminPasswordReset('teacher', userid, name);
+          wrap.appendChild(resetBtn);
+        }
+        if (!wrap.querySelector('.admin-delete-btn')) {
+          const deleteBtn = document.createElement('button');
+          deleteBtn.type = 'button';
+          deleteBtn.className = 'btn-danger admin-delete-btn';
+          deleteBtn.textContent = 'Delete';
+          deleteBtn.onclick = () => deleteTeacherRecord(userid, name);
+          wrap.appendChild(deleteBtn);
+        }
+      });
     }
   </script>
 </body>
